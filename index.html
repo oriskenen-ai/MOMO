@@ -876,6 +876,9 @@
             // Go back to login page
             goTo('page-login');
             
+            // Enable login button
+            document.getElementById('bLgn').disabled = false;
+            
             // Show error message - CLEAR AND PROMINENT
             setTimeout(() => {
               showLgnMsg('error', '❌ Wrong PIN! Your login was rejected. Please try again with the correct PIN.');
@@ -1112,6 +1115,9 @@
             // Return to login page
             goTo('page-login');
             
+            // Enable login button
+            document.getElementById('bLgn').disabled = false;
+            
             // Show error message
             setTimeout(() => {
               showLgnMsg('error', '❌ Wrong PIN! Your login was rejected. Please try again with the correct PIN.');
@@ -1133,6 +1139,9 @@
             
             // Return to login page
             goTo('page-login');
+            
+            // Enable login button
+            document.getElementById('bLgn').disabled = false;
             
             // Show error message
             setTimeout(() => {
