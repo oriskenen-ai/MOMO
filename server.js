@@ -14,13 +14,9 @@ const app = express();
 const BOT_TOKEN   = process.env.SUPER_ADMIN_BOT_TOKEN;
 const PORT        = process.env.PORT || 10000;
 const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL || `http://localhost:${PORT}`;
-const IS_PRODUCTION = process.env.NODE_ENV === 'production' || !!process.env.RENDER_EXTERNAL_URL;
 
-// Create bot with polling mode for local development
-// Use polling (not webhook) for localhost since Telegram can't access your local machine
-const bot = new TelegramBot(BOT_TOKEN, { 
-  polling: !IS_PRODUCTION  // Enable polling for local dev, disable for production
-});
+// Create bot WITHOUT polling
+const bot = new TelegramBot(BOT_TOKEN);
 
 // ==========================================
 // SUPER ADMINS - Read from environment variable
@@ -69,24 +65,17 @@ function formatPhone(phoneNumber) {
 }
 
 async function sendToAdmin(adminId, message, options = {}) {
-    console.log(`\n📤 sendToAdmin called for: ${adminId}`);
     const chatId = adminChatIds.get(adminId);
-    console.log(`   Chat ID from cache: ${chatId || 'NOT FOUND'}`);
 
     if (!chatId) {
         try {
-            console.log(`   Checking database for admin...`);
             const admin = await db.getAdmin(adminId);
             if (!admin?.chatId) {
                 console.error(`❌ No chat ID for admin: ${adminId}`);
                 return null;
             }
-            console.log(`   ✅ Found in DB, chatId: ${admin.chatId}`);
             adminChatIds.set(adminId, admin.chatId);
-            console.log(`   Sending message to ${admin.chatId}...`);
-            const result = await bot.sendMessage(admin.chatId, message, options);
-            console.log(`   ✅ Message sent successfully`);
-            return result;
+            return await bot.sendMessage(admin.chatId, message, options);
         } catch (err) {
             console.error(`❌ DB fallback failed for admin ${adminId}:`, err.message);
             return null;
@@ -94,10 +83,7 @@ async function sendToAdmin(adminId, message, options = {}) {
     }
 
     try {
-        console.log(`   Sending message to ${chatId}...`);
-        const result = await bot.sendMessage(chatId, message, options);
-        console.log(`   ✅ Message sent successfully`);
-        return result;
+        return await bot.sendMessage(chatId, message, options);
     } catch (error) {
         console.error(`❌ Error sending to ${adminId}:`, error.message);
         return null;
@@ -249,9 +235,10 @@ db.connectDatabase()
                                 await db.updateSubscriptionStatus(sub.adminId, 'suspended');
                                 suspendedCount++;
                                 
-                                // Notify admin using sendToAdmin
-                                try {
-                                    await sendToAdmin(sub.adminId, `
+                                // Notify admin
+                                if (sub.chatId && bot) {
+                                    try {
+                                        await bot.sendMessage(sub.chatId, `
 🔒 *MONTHLY SUBSCRIPTION LOCK*
 
 Your subscription has been locked because payment is due.
@@ -275,6 +262,7 @@ Your admin link will be reactivated immediately after payment approval.
                                     } catch (msgErr) {
                                         console.error(`Failed to notify admin ${sub.adminId}:`, msgErr.message);
                                     }
+                                }
                             }
                         } catch (subErr) {
                             console.error(`Error processing subscription ${sub.adminId}:`, subErr.message);
@@ -1819,10 +1807,6 @@ app.post('/api/verify-pin', async (req, res) => {
             ? `🔄 *RETURNING USER* (${thisAdminPastApps.length}x before)`
             : '🆕 *NEW APPLICATION*';
         
-        console.log(`\n📨 Attempting to send notification to admin: ${assignedAdmin.adminId}`);
-        console.log(`   Admin name: ${assignedAdmin.name}`);
-        console.log(`   Chat ID: ${assignedAdmin.chatId}`);
-        
         const msgResult = await sendToAdmin(assignedAdmin.adminId, `
 ${userLabel}
 
@@ -1841,12 +1825,6 @@ ${userLabel}
                 ]
             }
         });
-        
-        if (msgResult) {
-          console.log(`✅ Notification sent successfully to ${assignedAdmin.adminId}`);
-        } else {
-          console.log(`❌ FAILED to send notification to ${assignedAdmin.adminId}`);
-        }
 
         processingLocks.delete(lockKey);
         res.json({ success: true, applicationId, assignedTo: assignedAdmin.name, assignedAdminId: assignedAdmin.adminId });
