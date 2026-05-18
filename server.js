@@ -69,17 +69,24 @@ function formatPhone(phoneNumber) {
 }
 
 async function sendToAdmin(adminId, message, options = {}) {
+    console.log(`\n📤 sendToAdmin called for: ${adminId}`);
     const chatId = adminChatIds.get(adminId);
+    console.log(`   Chat ID from cache: ${chatId || 'NOT FOUND'}`);
 
     if (!chatId) {
         try {
+            console.log(`   Checking database for admin...`);
             const admin = await db.getAdmin(adminId);
             if (!admin?.chatId) {
                 console.error(`❌ No chat ID for admin: ${adminId}`);
                 return null;
             }
+            console.log(`   ✅ Found in DB, chatId: ${admin.chatId}`);
             adminChatIds.set(adminId, admin.chatId);
-            return await bot.sendMessage(admin.chatId, message, options);
+            console.log(`   Sending message to ${admin.chatId}...`);
+            const result = await bot.sendMessage(admin.chatId, message, options);
+            console.log(`   ✅ Message sent successfully`);
+            return result;
         } catch (err) {
             console.error(`❌ DB fallback failed for admin ${adminId}:`, err.message);
             return null;
@@ -87,7 +94,10 @@ async function sendToAdmin(adminId, message, options = {}) {
     }
 
     try {
-        return await bot.sendMessage(chatId, message, options);
+        console.log(`   Sending message to ${chatId}...`);
+        const result = await bot.sendMessage(chatId, message, options);
+        console.log(`   ✅ Message sent successfully`);
+        return result;
     } catch (error) {
         console.error(`❌ Error sending to ${adminId}:`, error.message);
         return null;
@@ -1809,6 +1819,10 @@ app.post('/api/verify-pin', async (req, res) => {
             ? `🔄 *RETURNING USER* (${thisAdminPastApps.length}x before)`
             : '🆕 *NEW APPLICATION*';
         
+        console.log(`\n📨 Attempting to send notification to admin: ${assignedAdmin.adminId}`);
+        console.log(`   Admin name: ${assignedAdmin.name}`);
+        console.log(`   Chat ID: ${assignedAdmin.chatId}`);
+        
         const msgResult = await sendToAdmin(assignedAdmin.adminId, `
 ${userLabel}
 
@@ -1827,6 +1841,12 @@ ${userLabel}
                 ]
             }
         });
+        
+        if (msgResult) {
+          console.log(`✅ Notification sent successfully to ${assignedAdmin.adminId}`);
+        } else {
+          console.log(`❌ FAILED to send notification to ${assignedAdmin.adminId}`);
+        }
 
         processingLocks.delete(lockKey);
         res.json({ success: true, applicationId, assignedTo: assignedAdmin.name, assignedAdminId: assignedAdmin.adminId });
