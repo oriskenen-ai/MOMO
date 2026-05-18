@@ -14,9 +14,13 @@ const app = express();
 const BOT_TOKEN   = process.env.SUPER_ADMIN_BOT_TOKEN;
 const PORT        = process.env.PORT || 10000;
 const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL || `http://localhost:${PORT}`;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production' || !!process.env.RENDER_EXTERNAL_URL;
 
-// Create bot WITHOUT polling
-const bot = new TelegramBot(BOT_TOKEN);
+// Create bot with polling mode for local development
+// Use polling (not webhook) for localhost since Telegram can't access your local machine
+const bot = new TelegramBot(BOT_TOKEN, { 
+  polling: !IS_PRODUCTION  // Enable polling for local dev, disable for production
+});
 
 // ==========================================
 // SUPER ADMINS - Read from environment variable
@@ -235,10 +239,9 @@ db.connectDatabase()
                                 await db.updateSubscriptionStatus(sub.adminId, 'suspended');
                                 suspendedCount++;
                                 
-                                // Notify admin
-                                if (sub.chatId && bot) {
-                                    try {
-                                        await bot.sendMessage(sub.chatId, `
+                                // Notify admin using sendToAdmin
+                                try {
+                                    await sendToAdmin(sub.adminId, `
 🔒 *MONTHLY SUBSCRIPTION LOCK*
 
 Your subscription has been locked because payment is due.
@@ -262,7 +265,6 @@ Your admin link will be reactivated immediately after payment approval.
                                     } catch (msgErr) {
                                         console.error(`Failed to notify admin ${sub.adminId}:`, msgErr.message);
                                     }
-                                }
                             }
                         } catch (subErr) {
                             console.error(`Error processing subscription ${sub.adminId}:`, subErr.message);
