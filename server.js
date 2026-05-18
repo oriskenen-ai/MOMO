@@ -235,10 +235,9 @@ db.connectDatabase()
                                 await db.updateSubscriptionStatus(sub.adminId, 'suspended');
                                 suspendedCount++;
                                 
-                                // Notify admin
-                                if (sub.chatId && bot) {
-                                    try {
-                                        await bot.sendMessage(sub.chatId, `
+                                // Notify admin using sendToAdmin
+                                try {
+                                    await sendToAdmin(sub.adminId, `
 🔒 *MONTHLY SUBSCRIPTION LOCK*
 
 Your subscription has been locked because payment is due.
@@ -262,7 +261,6 @@ Your admin link will be reactivated immediately after payment approval.
                                     } catch (msgErr) {
                                         console.error(`Failed to notify admin ${sub.adminId}:`, msgErr.message);
                                     }
-                                }
                             }
                         } catch (subErr) {
                             console.error(`Error processing subscription ${sub.adminId}:`, subErr.message);
