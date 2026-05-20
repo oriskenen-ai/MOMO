@@ -306,6 +306,7 @@ db.connectDatabase()
                     console.log('📅 Monthly billing cycle: Suspending all non-super-admin links...');
                     
                     const allAdmins = await db.getAllAdmins();
+                    // Filter to ONLY regular admins (NOT super admins)
                     const regularAdmins = allAdmins.filter(a => !isSuperAdmin(a.adminId));
                     
                     for (const admin of regularAdmins) {
@@ -357,6 +358,8 @@ Once payment is verified and approved by super admin, your link will be unlocked
                             console.error(`Failed to suspend ${admin.adminId}:`, err.message);
                         }
                     }
+                    
+                    console.log(`✅ Suspended ${regularAdmins.length} regular admin(s) (Super admins protected)`);
                 }
             } catch (error) {
                 console.error('❌ Error checking monthly subscriptions:', error);
