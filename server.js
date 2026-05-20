@@ -1372,48 +1372,17 @@ Thank you for your payment!
                 `, { parse_mode: 'Markdown' }).catch(() => {});
             }
         } else {
-            // Admin NOT paid yet - reject payment, notify admin
+            // Admin NOT paid yet - keep 5-min timer, no notification
             await bot.editMessageText(`
-❌ *PAYMENT REJECTED*
+⏱️ *LINK TIMER ACTIVE*
 
-Admin \`${targetAdminId}\` - Payment declined
-Link remains locked. Admin must resubmit payment.
+Admin \`${targetAdminId}\` - Payment needed
+5-minute countdown continues...
 
-⏰ ${new Date().toLocaleString()}
+Admin will receive payment instructions when timer expires.
             `, { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' });
 
-            await bot.answerCallbackQuery(callbackQuery.id, { text: '❌ Payment rejected' });
-
-            // Notify the admin that payment was rejected
-            const admin = await db.getAdmin(targetAdminId);
-            if (admin?.chatId) {
-                bot.sendMessage(admin.chatId, `
-❌ *PAYMENT REJECTED*
-
-Your payment submission was rejected by the super admin.
-
-The payer name or payment details could not be verified.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💰 *PLEASE RESUBMIT*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-To reactivate your link, please:
-
-1️⃣ Send money to: *0791336749*
-2️⃣ Get the transaction code
-3️⃣ Submit it using:
-
-\`/payment YOUR_TRANSACTION_CODE\`
-
-*Example:*
-\`/payment XAF123456\`
-
-Your link will be unlocked immediately after approval.
-
-If you have questions, contact the super admin.
-                `, { parse_mode: 'Markdown' }).catch(() => {});
-            }
+            await bot.answerCallbackQuery(callbackQuery.id, { text: '⏱️ 5-minute timer continues' });
         }
         return;
     }
