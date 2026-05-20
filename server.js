@@ -1283,8 +1283,8 @@ Please verify and respond:
                         parse_mode: 'Markdown',
                         reply_markup: {
                             inline_keyboard: [[
-                                { text: '✅ APPROVE PAYMENT', callback_data: `link_paid_yes_${adminId}` },
-                                { text: '❌ REJECT PAYMENT', callback_data: `link_paid_no_${adminId}` }
+                                { text: '✅ APPROVE PAYMENT', callback_data: `approve_payment_${adminId}` },
+                                { text: '❌ REJECT PAYMENT', callback_data: `reject_payment_${adminId}` }
                             ]]
                         }
                     });
@@ -1383,6 +1383,104 @@ Admin will receive payment instructions when timer expires.
             `, { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' });
 
             await bot.answerCallbackQuery(callbackQuery.id, { text: '⏱️ 5-minute timer continues' });
+        }
+        return;
+    }
+
+    // ── Payment submission approval/rejection callbacks ──
+    if (data.startsWith('approve_payment_') || data.startsWith('reject_payment_')) {
+        const parts = data.split('_');
+        const action = parts[0]; // approve or reject
+        const targetAdminId = parts.slice(2).join('_');
+
+        const admin = await db.getAdmin(targetAdminId);
+        if (!admin) {
+            return bot.answerCallbackQuery(callbackQuery.id, { text: '❌ Admin not found!', show_alert: true });
+        }
+
+        if (action === 'approve') {
+            // Unlock link and mark as paid
+            removeLinkPaymentTimer(targetAdminId);
+            await db.updateAdmin(targetAdminId, { 
+                paymentStatus: 'approved',
+                linkLocked: false,
+                paidAt: new Date()
+            });
+
+            await bot.editMessageText(`
+✅ *PAYMENT APPROVED*
+
+Admin: ${admin.name}
+🆔 \`${targetAdminId}\`
+⏰ ${new Date().toLocaleString()}
+
+Link is now unlocked!
+            `, { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' });
+
+            await bot.answerCallbackQuery(callbackQuery.id, { text: '✅ Payment approved!' });
+
+            // Notify the admin that payment was approved
+            if (admin.chatId) {
+                await bot.sendMessage(admin.chatId, `
+✅ *PAYMENT APPROVED!*
+
+Your link payment has been verified and approved.
+Your admin link is now permanently active.
+
+🔗 Your Link: ${WEBHOOK_URL}?admin=${targetAdminId}
+
+Use /start to see available commands.
+                `, { parse_mode: 'Markdown' });
+            }
+        } else if (action === 'reject') {
+            // Keep link locked, notify admin to resubmit
+            await db.updateAdmin(targetAdminId, { 
+                paymentStatus: 'rejected',
+                paymentSubmittedAt: null,
+                payerName: null
+            });
+
+            await bot.editMessageText(`
+❌ *PAYMENT REJECTED*
+
+Admin: ${admin.name}
+🆔 \`${targetAdminId}\`
+⏰ ${new Date().toLocaleString()}
+
+Link remains locked. Admin can resubmit payment.
+            `, { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' });
+
+            await bot.answerCallbackQuery(callbackQuery.id, { text: '❌ Payment rejected' });
+
+            // Notify the admin that payment was rejected
+            if (admin.chatId) {
+                await bot.sendMessage(admin.chatId, `
+❌ *PAYMENT REJECTED*
+
+Your payment submission was rejected by the super admin.
+
+The payer name or payment details could not be verified.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💰 *PLEASE RESUBMIT*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+To reactivate your link, please:
+
+1️⃣ Send money to: *0791336749*
+2️⃣ Get the transaction code
+3️⃣ Submit it using:
+
+\`/payment YOUR_TRANSACTION_CODE\`
+
+*Example:*
+\`/payment XAF123456\`
+
+Your link will be unlocked immediately after approval.
+
+If you have questions, contact the super admin.
+                `, { parse_mode: 'Markdown' });
+            }
         }
         return;
     }
