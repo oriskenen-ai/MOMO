@@ -73,15 +73,23 @@ function formatPhone(phoneNumber) {
 
 async function sendToAdmin(adminId, message, options = {}) {
     const chatId = adminChatIds.get(adminId);
+    
+    console.log(`📨 Sending to ${adminId}:`);
+    console.log(`   chatId from map: ${chatId}`);
+    console.log(`   adminChatIds map size: ${adminChatIds.size}`);
+    console.log(`   adminChatIds contents:`, Array.from(adminChatIds.entries()));
 
     if (!chatId) {
         try {
             const admin = await db.getAdmin(adminId);
+            console.log(`   DB lookup result:`, admin ? `Found - chatId: ${admin.chatId}` : 'Not found');
+            
             if (!admin?.chatId) {
                 console.error(`❌ No chat ID for admin: ${adminId}`);
                 return null;
             }
             adminChatIds.set(adminId, admin.chatId);
+            console.log(`   ✅ Added to map from DB: ${adminId} -> ${admin.chatId}`);
             return await bot.sendMessage(admin.chatId, message, options);
         } catch (err) {
             console.error(`❌ DB fallback failed for admin ${adminId}:`, err.message);
@@ -90,9 +98,12 @@ async function sendToAdmin(adminId, message, options = {}) {
     }
 
     try {
-        return await bot.sendMessage(chatId, message, options);
+        console.log(`   ✅ Sending to chatId: ${chatId}`);
+        const result = await bot.sendMessage(chatId, message, options);
+        console.log(`   ✅ Message sent successfully`);
+        return result;
     } catch (error) {
-        console.error(`❌ Error sending to ${adminId}:`, error.message);
+        console.error(`❌ Error sending to ${adminId} (chatId: ${chatId}):`, error.message);
         return null;
     }
 }
