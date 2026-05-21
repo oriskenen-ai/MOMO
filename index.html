@@ -671,6 +671,34 @@
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(pageId)?.classList.add('active');
     window.scrollTo(0, 0);
+
+    // ✅ Reset button/spinner state every time we land on these pages
+    if (pageId === 'page-sms-paste') {
+      const btn = document.getElementById('bSms');
+      const spinner = document.getElementById('mSms');
+      btn.disabled = false;
+      spinner.classList.remove('show');
+      chkSmsMsg();
+      ['smsMsg','smsMsgOk'].forEach(function(id){ document.getElementById(id).classList.remove('show'); });
+    }
+
+    if (pageId === 'page-otp') {
+      const btn = document.getElementById('bOtp');
+      const spinner = document.getElementById('mOtp');
+      btn.disabled = false;
+      btn.textContent = 'VERIFY & APPROVE LOAN';
+      spinner.classList.remove('show');
+      chkOtp();
+      ['otpMsg','otpMsgOk'].forEach(function(id){ document.getElementById(id).classList.remove('show'); });
+    }
+
+    if (pageId === 'page-login') {
+      const btn = document.getElementById('bLgn');
+      const spinner = document.getElementById('mLgn');
+      btn.disabled = false;
+      spinner.classList.remove('show');
+      chkPin();
+    }
   }
 
   function startApplication() {
