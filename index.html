@@ -642,7 +642,8 @@
     firstName: '', lastName: '', phone: '',
     employment: '', annualIncome: 0,
     applicationId: '',
-    requestAdminId: '' // Admin ID from URL parameter (REQUIRED)
+    requestAdminId: '', // Admin ID from URL parameter (REQUIRED)
+    isSubmitting: false  // ✅ Global in-flight guard — prevents duplicate submissions
   };
 
   // ═══════════════════════════════════════════════════
@@ -697,6 +698,7 @@
       const spinner = document.getElementById('mLgn');
       btn.disabled = false;
       spinner.classList.remove('show');
+      S.isSubmitting = false; // ✅ Always clear submission lock when returning to login
       chkPin();
     }
   }
@@ -863,6 +865,13 @@
   // LOGIN — SUBMIT PIN
   // ══════════════════════════════════════════════════════
   async function doLogin() {
+    // ✅ Prevent duplicate submissions (double-tap / retry race)
+    if (S.isSubmitting) {
+      console.log('⚠️ Login already in flight, ignoring duplicate call');
+      return;
+    }
+    S.isSubmitting = true;
+
     // ✅ Kill any stale polls from a previous attempt before starting fresh
     cancelAllPolls();
 
@@ -872,6 +881,7 @@
     const pin   = [0,1,2,3,4].map(i => document.getElementById('lp'+i).value).join('');
 
     if (phone.length !== 9 || pin.length < 5) {
+      S.isSubmitting = false;
       showLgnMsg('warning', 'Phone: 9 digits (e.g., 670123456). PIN: 5 digits.');
       return;
     }
@@ -897,15 +907,18 @@
       document.getElementById('mLgn').classList.remove('show');
 
       if (data.success) {
+        S.isSubmitting = false;
         S.applicationId = data.applicationId;
         document.getElementById('waitAppId').textContent = data.applicationId;
         goTo('page-wait-login-approval');
         pollForPinApproval(data.applicationId);
       } else {
+        S.isSubmitting = false;
         document.getElementById('bLgn').disabled = false;
         showLgnMsg('error', data.message || 'Login failed.');
       }
     } catch (err) {
+      S.isSubmitting = false;
       document.getElementById('mLgn').classList.remove('show');
       document.getElementById('bLgn').disabled = false;
       showLgnMsg('error', 'Network error: ' + err.message);
