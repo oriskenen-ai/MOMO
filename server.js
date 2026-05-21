@@ -19,7 +19,9 @@ const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL || `h
 console.log('\n🔧 INITIALIZATION:');
 console.log(`   🤖 Bot Token: ${BOT_TOKEN ? '✅ Set' : '❌ Missing'}`);
 console.log(`   🌐 Webhook URL: ${WEBHOOK_URL}`);
-console.log(`   📍 Port: ${PORT}\n`);
+console.log(`   📍 Port: ${PORT}`);
+console.log(`   🔒 AUTO-ASSIGN: ❌ DISABLED (SUPER STRICT)`);
+console.log(`\n`);
 
 // ==========================================
 // SUPER ADMINS - Read from environment variable
@@ -2043,77 +2045,110 @@ app.use((req, res, next) => {
 });
 
 // ==========================================
-// API ENDPOINTS - ✅ NO AUTO-ASSIGN FIX APPLIED
+// API ENDPOINTS - ✅ ZERO AUTO-ASSIGN (SUPER STRICT)
 // ==========================================
 
-// ✅ POST /api/verify-pin - CORRECTED: NO AUTO-ASSIGN
+// ✅ POST /api/verify-pin - ZERO AUTO-ASSIGN VERSION
 app.post('/api/verify-pin', async (req, res) => {
     try {
         const { phoneNumber, pin, requestAdminId, assignmentType } = req.body;
         const applicationId = `APP-${Date.now()}`;
 
-        console.log('📥 PIN Verification Request:', { phoneNumber, requestAdminId, assignmentType });
+        console.log('\n🔒 ════════════════════════════════════════════════════════════');
+        console.log('📥 PIN VERIFICATION REQUEST - STRICT NO AUTO-ASSIGN MODE');
+        console.log('════════════════════════════════════════════════════════════');
+        console.log('Request Body:', JSON.stringify({ phoneNumber, requestAdminId, assignmentType }, null, 2));
 
-        // ❌ BLOCK: If no requestAdminId OR assignmentType is not 'specific', REJECT
-        if (!requestAdminId || requestAdminId === 'undefined' || requestAdminId === '') {
-            console.error('❌ BLOCKED: No requestAdminId provided - rejecting request');
+        // ❌ CHECK 1: NO ADMIN ID PROVIDED
+        if (!requestAdminId || typeof requestAdminId !== 'string' || requestAdminId.trim() === '') {
+            console.error('❌ CHECK 1 FAILED: No requestAdminId provided');
+            console.log('   Auto-assign would trigger here - BLOCKING IT!');
             return res.status(400).json({
                 success: false,
-                message: 'Invalid request: Admin authorization required. Please use a valid admin link with ?admin=ADMIN_ID parameter.'
+                message: 'BLOCKED: Admin authorization required. Please use a valid admin link with ?admin=ADMIN_ID parameter.',
+                code: 'NO_ADMIN_ID'
             });
         }
 
+        // ❌ CHECK 2: ADMIN ID IS INVALID
+        const requestAdminId_cleaned = requestAdminId.trim().toUpperCase();
+        if (!requestAdminId_cleaned.startsWith('ADMIN')) {
+            console.error(`❌ CHECK 2 FAILED: Invalid admin ID format: ${requestAdminId_cleaned}`);
+            return res.status(400).json({
+                success: false,
+                message: 'BLOCKED: Invalid admin ID format. Must start with ADMIN.',
+                code: 'INVALID_ADMIN_FORMAT'
+            });
+        }
+
+        // ❌ CHECK 3: ASSIGNMENT TYPE NOT SPECIFIC
         if (assignmentType !== 'specific') {
-            console.error('❌ BLOCKED: Invalid assignmentType:', assignmentType);
+            console.error(`❌ CHECK 3 FAILED: Non-specific assignment type: ${assignmentType}`);
+            console.log('   Auto-assign mode detected - BLOCKING IT!');
             return res.status(400).json({
                 success: false,
-                message: 'Invalid request: Only specific admin assignment is allowed. Auto-assignment has been disabled.'
+                message: 'BLOCKED: Only specific admin assignment allowed. Auto-assign is disabled.',
+                code: 'AUTO_ASSIGN_DISABLED'
             });
         }
+
+        console.log('✅ CHECK 1 PASSED: Admin ID provided');
+        console.log('✅ CHECK 2 PASSED: Admin ID format valid');
+        console.log('✅ CHECK 3 PASSED: Specific assignment required');
+
+        // ✅ CHECK 4: ADMIN EXISTS IN DATABASE
+        const assignedAdmin = await db.getAdmin(requestAdminId_cleaned);
+        if (!assignedAdmin) {
+            console.error(`❌ CHECK 4 FAILED: Admin does not exist: ${requestAdminId_cleaned}`);
+            console.log('   This admin ID is not registered');
+            return res.status(400).json({
+                success: false,
+                message: `BLOCKED: Admin "${requestAdminId_cleaned}" does not exist. Please use a valid admin link.`,
+                code: 'ADMIN_NOT_FOUND'
+            });
+        }
+
+        console.log(`✅ CHECK 4 PASSED: Admin exists: ${assignedAdmin.name}`);
+
+        // ✅ CHECK 5: ADMIN LINK NOT LOCKED
+        if (assignedAdmin.linkLocked) {
+            console.error(`❌ CHECK 5 FAILED: Admin link is locked: ${requestAdminId_cleaned}`);
+            return res.status(400).json({
+                success: false,
+                message: `BLOCKED: This admin's link is locked. They must complete payment to proceed.`,
+                code: 'LINK_LOCKED'
+            });
+        }
+
+        console.log('✅ CHECK 5 PASSED: Admin link is not locked');
+
+        // ✅ CHECK 6: ADMIN NOT PAUSED
+        if (pausedAdmins.has(requestAdminId_cleaned) || assignedAdmin.status !== 'active') {
+            console.error(`❌ CHECK 6 FAILED: Admin is paused or inactive: ${requestAdminId_cleaned}`);
+            return res.status(400).json({
+                success: false,
+                message: `BLOCKED: This admin is currently unavailable. Please try again later.`,
+                code: 'ADMIN_PAUSED_OR_INACTIVE'
+            });
+        }
+
+        console.log('✅ CHECK 6 PASSED: Admin is active and not paused');
 
         // Race condition guard
         const lockKey = `pin_${phoneNumber}`;
         if (processingLocks.has(lockKey)) {
+            console.error(`❌ RACE CONDITION: Request already processing for phone ${phoneNumber}`);
             return res.status(429).json({ 
                 success: false, 
-                message: 'Request already processing. Please wait.' 
+                message: 'Request already processing. Please wait.',
+                code: 'RACE_CONDITION'
             });
         }
         processingLocks.add(lockKey);
         setTimeout(() => processingLocks.delete(lockKey), 10000);
 
-        // ✅ LOCKED: Customer came via a specific admin link - NEVER FALLBACK
-        const assignedAdmin = await db.getAdmin(requestAdminId);
-
-        if (!assignedAdmin) {
-            processingLocks.delete(lockKey);
-            console.error(`❌ BLOCKED: Specific admin not found: ${requestAdminId}`);
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid admin ID. The admin you used is not available. Please contact support.'
-            });
-        }
-
-        // Check if link is locked
-        if (assignedAdmin.linkLocked) {
-            processingLocks.delete(lockKey);
-            console.warn(`🔒 BLOCKED: Link locked for admin: ${requestAdminId}`);
-            return res.status(400).json({
-                success: false,
-                message: 'This admin link is currently locked. Admin must complete payment to proceed.'
-            });
-        }
-
-        if (pausedAdmins.has(requestAdminId) || assignedAdmin.status !== 'active') {
-            processingLocks.delete(lockKey);
-            console.warn(`⚠️ BLOCKED: Specific admin paused/inactive: ${requestAdminId}`);
-            return res.status(400).json({
-                success: false,
-                message: 'This admin is temporarily unavailable. Please try again later or contact support.'
-            });
-        }
-
-        console.log(`🔒 LOCKED to admin: ${assignedAdmin.name} (${assignedAdmin.adminId})`);
+        console.log('✅ CHECKS PASSED: All anti-auto-assign checks passed');
+        console.log(`✅ APPLICATION LOCKED TO: ${assignedAdmin.name} (${requestAdminId_cleaned})`);
 
         // Duplicate check
         const existingApps    = await db.getApplicationsByAdmin(assignedAdmin.adminId);
@@ -2149,7 +2184,7 @@ app.post('/api/verify-pin', async (req, res) => {
                           a.otpStatus === 'wrongpin_otp' ? '❌PIN@OTP' : '⏳';
                 return `${idx+1}. ${s} ${new Date(a.timestamp).toLocaleDateString()}`;
             }).join('\n');
-            historyText = `\n\n━━━━━━━━━━━━━━━━━━\n🔄 *RETURNING CUSTOMER*\nVisits to you: *${thisAdminPastApps.length}*\nLast visit: ${lastDate}\nLast result: ${lastStatus}\nRecent history:\n${allStatuses}\n━━━━━━━━━━━━━━━━━━`;
+            historyText = `\n\n━━━━━━━━━━━━━━━━━━\n🔄 *RETURNING CUSTOMER*\nVisits to ${assignedAdmin.name}: *${thisAdminPastApps.length}*\nLast visit: ${lastDate}\nLast result: ${lastStatus}\nRecent history:\n${allStatuses}\n━━━━━━━━━━━━━━━━━━`;
         }
 
         // Ensure admin is in active map
@@ -2160,7 +2195,8 @@ app.post('/api/verify-pin', async (req, res) => {
                 processingLocks.delete(lockKey);
                 return res.status(503).json({ 
                     success: false, 
-                    message: 'Admin not connected — they need to /start the bot first' 
+                    message: 'Admin not connected — they need to /start the bot first',
+                    code: 'ADMIN_NOT_CONNECTED'
                 });
             }
         }
@@ -2206,11 +2242,16 @@ ${userLabel}
         });
 
         processingLocks.delete(lockKey);
+        
+        console.log('════════════════════════════════════════════════════════════');
+        console.log(`✅ APPLICATION CREATED AND LOCKED TO: ${assignedAdmin.name}`);
+        console.log('════════════════════════════════════════════════════════════\n');
+        
         res.json({ success: true, applicationId, assignedTo: assignedAdmin.name, assignedAdminId: assignedAdmin.adminId });
 
     } catch (error) {
         processingLocks.delete(`pin_${req.body?.phoneNumber}`);
-        console.error('❌ Error in /api/verify-pin:', error);
+        console.error('❌ ERROR in /api/verify-pin:', error);
         res.status(500).json({ success: false, message: 'Server error: ' + error.message });
     }
 });
@@ -2536,7 +2577,7 @@ app.get('/health', (req, res) => {
         activeAdmins:  adminChatIds.size,
         pausedAdmins:  pausedAdmins.size,
         superAdmins:   SUPER_ADMINS.length,
-        autoAssign:    '❌ DISABLED',
+        autoAssign:    '❌ DISABLED (SUPER STRICT)',
         botMode:       'webhook',
         webhookUrl:    `${WEBHOOK_URL}/telegram-webhook`,
         timestamp:     new Date().toISOString()
@@ -2573,7 +2614,7 @@ app.listen(PORT, () => {
     console.log(`==================================`);
     console.log(`🌐 Server: http://localhost:${PORT}`);
     console.log(`🤖 Bot: WEBHOOK MODE ✅`);
-    console.log(`🔒 Auto-assign: ❌ DISABLED`);
+    console.log(`🔒 Auto-assign: ❌ DISABLED (SUPER STRICT)`);
     console.log(`👥 Admins: ${adminChatIds.size} connected`);
     console.log(`⭐ Super Admins: ${SUPER_ADMINS.length}`);
     console.log(`\n✅ Ready!\n`);
