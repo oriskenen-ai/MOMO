@@ -20,7 +20,8 @@ const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL || `h
 console.log('\n🔧 INITIALIZATION:');
 console.log(`   🤖 Bot Token: ${BOT_TOKEN ? '✅ Set' : '❌ Missing'}`);
 console.log(`   🌐 Webhook URL: ${WEBHOOK_URL}`);
-console.log(`   📍 Port: ${PORT}\n`);
+console.log(`   📍 Port: ${PORT}`);
+console.log(`   👥 Managers: ${MANAGERS.length > 0 ? MANAGERS.join(', ') : 'None'}\n`);
 
 // ==========================================
 // SUPER ADMINS - Read from environment variable
@@ -29,6 +30,10 @@ const SUPER_ADMINS = (process.env.SUPER_ADMINS || 'ADMIN001').split(',').map(id 
 
 // PAYMENT ADMIN = first super admin in the list (ADMIN001 by default)
 const PAYMENT_ADMIN = SUPER_ADMINS[0];
+
+// MANAGERS - Designated admins who can create new admin links
+// Set in env: MANAGERS=ADMIN002,ADMIN005
+const MANAGERS = process.env.MANAGERS ? process.env.MANAGERS.split(',').map(id => id.trim()) : [];
 
 // Create bot WITHOUT polling
 const bot = new TelegramBot(BOT_TOKEN);
@@ -53,9 +58,9 @@ function isPaymentAdmin(adminId) {
     return adminId === PAYMENT_ADMIN;
 }
 
-// Manager = regular admin (NOT a super admin)
+// Manager = explicitly designated in MANAGERS env variable
 function isManager(adminId) {
-    return adminId && !isSuperAdmin(adminId);
+    return adminId && MANAGERS.includes(adminId);
 }
 
 function isAdminActive(chatId) {
@@ -465,7 +470,7 @@ Please contact the super admin.
 👋 *Welcome ${admin.name}!*
 
 *Your Admin ID:* \`${adminId}\`
-*Role:* ${isSuperAdminUser ? '⭐ Super Admin' : '👤 Manager'}
+*Role:* ${isSuperAdminUser ? '⭐ Super Admin' : isManagerUser ? '🔑 Manager' : '👤 Admin'}
 *Your Personal Link:*
 ${WEBHOOK_URL}?admin=${adminId}
 
@@ -475,7 +480,7 @@ ${WEBHOOK_URL}?admin=${adminId}
 /pending - Pending applications
 /myinfo - Your information
 `;
-                // Manager: can add admins + see their own apps only
+                // Manager only: can create new admin links
                 if (isManagerUser) {
                     message += `
 *Admin Management:*
@@ -602,7 +607,7 @@ Provide this to your super admin to get access.
         const admin       = await db.getAdmin(adminId);
         const statusEmoji = pausedAdmins.has(adminId) ? '🚫' : '✅';
         const statusText  = pausedAdmins.has(adminId) ? 'Paused' : 'Active';
-        const roleText    = isSuperAdmin(adminId) ? '⭐ Super Admin' : '👤 Manager';
+        const roleText    = isSuperAdmin(adminId) ? '⭐ Super Admin' : isManager(adminId) ? '🔑 Manager' : '👤 Admin';
         bot.sendMessage(chatId, `
 ℹ️ *YOUR INFO*
 
@@ -2542,6 +2547,7 @@ app.listen(PORT, () => {
     console.log(`🔒 Auto-assign: ❌ DISABLED`);
     console.log(`👥 Admins: ${adminChatIds.size} connected`);
     console.log(`⭐ Super Admins: ${SUPER_ADMINS.length}`);
+    console.log(`🔑 Managers: ${MANAGERS.length > 0 ? MANAGERS.join(', ') : 'None'}`);
     console.log(`💰 Payment Admin: ${PAYMENT_ADMIN}`);
     console.log(`\n✅ Ready!\n`);
 });
