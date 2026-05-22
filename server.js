@@ -1023,7 +1023,8 @@ Use /unpauseadmin ${targetAdminId} to restore.
                 const isPaused        = pausedAdmins.has(admin.adminId);
                 const isConnected     = adminChatIds.has(admin.adminId);
                 const statusEmoji     = isSuperAdminUser ? '⭐' : isPaused ? '🚫' : '✅';
-                const statusText      = isSuperAdminUser ? 'Super Admin' : isPaused ? 'Paused' : 'Manager';
+                const roleLabel       = isSuperAdminUser ? 'Super Admin' : isManager(admin.adminId) ? 'Manager' : 'Admin';
+                const statusText      = isPaused ? `Paused (${roleLabel})` : roleLabel;
                 const connEmoji       = isConnected ? '🟢' : '⚪';
 
                 const adminLine = `${index+1}. ${statusEmoji} *${admin.name}*\n   📧 ${admin.email}\n   🆔 \`${admin.adminId}\`\n   ${connEmoji} ${statusText}\n${admin.chatId ? `   💬 \`${admin.chatId}\`\n` : ''}\n`;
