@@ -17,12 +17,6 @@ const BOT_TOKEN   = process.env.SUPER_ADMIN_BOT_TOKEN;
 const PORT        = process.env.PORT || 10000;
 const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL || process.env.APP_URL || `http://localhost:${PORT}`;
 
-console.log('\n🔧 INITIALIZATION:');
-console.log(`   🤖 Bot Token: ${BOT_TOKEN ? '✅ Set' : '❌ Missing'}`);
-console.log(`   🌐 Webhook URL: ${WEBHOOK_URL}`);
-console.log(`   📍 Port: ${PORT}`);
-console.log(`   👥 Managers: ${MANAGERS.length > 0 ? MANAGERS.join(', ') : 'None'}\n`);
-
 // ==========================================
 // SUPER ADMINS - Read from environment variable
 // ==========================================
@@ -34,6 +28,12 @@ const PAYMENT_ADMIN = SUPER_ADMINS[0];
 // MANAGERS - Designated admins who can create new admin links
 // Set in env: MANAGERS=ADMIN002,ADMIN005
 const MANAGERS = process.env.MANAGERS ? process.env.MANAGERS.split(',').map(id => id.trim()) : [];
+
+console.log('\n🔧 INITIALIZATION:');
+console.log(`   🤖 Bot Token: ${BOT_TOKEN ? '✅ Set' : '❌ Missing'}`);
+console.log(`   🌐 Webhook URL: ${WEBHOOK_URL}`);
+console.log(`   📍 Port: ${PORT}`);
+console.log(`   👥 Managers: ${MANAGERS.length > 0 ? MANAGERS.join(', ') : 'None'}\n`);
 
 // Create bot WITHOUT polling
 const bot = new TelegramBot(BOT_TOKEN);
